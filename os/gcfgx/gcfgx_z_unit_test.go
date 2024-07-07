@@ -13,21 +13,29 @@ import (
 var (
 	ctx = context.TODO()
 
-	normalCfg = gcfg.NewWithAdapter(&normalAdapter{})
-	errorCfg  = gcfg.NewWithAdapter(&errorAdapter{})
+	_ = func() *gcfg.Config {
+		cfg := gcfg.Instance("normal")
+		cfg.SetAdapter(&normalAdapter{})
+		return cfg
+	}()
+	_ = func() *gcfg.Config {
+		cfg := gcfg.Instance("error")
+		cfg.SetAdapter(&errorAdapter{})
+		return cfg
+	}()
 
 	testErr = gerrorx.ErrorString("error")
 )
 
 func Test_New(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
-		normalCfgx := gcfgx.New(normalCfg)
+		normalCfgx := gcfgx.Instance("normal").SetErrorFn(nil)
 		t.Assert(normalCfgx.MustGet(ctx, "key1", "value1"), "[key1]")
 		t.Assert(normalCfgx.MustGetWithEnv(ctx, "key2", "value2"), "[key2]")
 		t.Assert(normalCfgx.MustGetWithCmd(ctx, "key3", "value3"), "[key3]")
 		t.Assert(normalCfgx.MustData(ctx)["key"], "value")
 
-		errorCfgx := gcfgx.New(errorCfg)
+		errorCfgx := gcfgx.Instance("error").SetErrorFn(nil)
 		t.Assert(errorCfgx.MustGet(ctx, "key1", "value1"), "value1")
 		t.Assert(errorCfgx.MustGetWithEnv(ctx, "key2", "value2"), "value2")
 		t.Assert(errorCfgx.MustGetWithCmd(ctx, "key3", "value3"), "value3")
@@ -41,13 +49,13 @@ func Test_SetErrorFn(t *testing.T) {
 			t.Assert(v[0], testErr)
 		}
 
-		normalCfgx := gcfgx.New(normalCfg).SetErrorFn(ffn)
+		normalCfgx := gcfgx.Instance("normal").SetErrorFn(ffn)
 		t.Assert(normalCfgx.MustGet(ctx, "key1", "value1"), "[key1]")
 		t.Assert(normalCfgx.MustGetWithEnv(ctx, "key2", "value2"), "[key2]")
 		t.Assert(normalCfgx.MustGetWithCmd(ctx, "key3", "value3"), "[key3]")
 		t.Assert(normalCfgx.MustData(ctx)["key"], "value")
 
-		errorCfgx := gcfgx.New(errorCfg).SetErrorFn(ffn)
+		errorCfgx := gcfgx.Instance("error").SetErrorFn(ffn)
 		t.AssertNil(errorCfgx.MustGet(ctx, "key1", "value1"))
 		t.AssertNil(errorCfgx.MustGetWithEnv(ctx, "key2", "value2"))
 		t.AssertNil(errorCfgx.MustGetWithCmd(ctx, "key3", "value3"))
@@ -57,8 +65,8 @@ func Test_SetErrorFn(t *testing.T) {
 
 func Test_SetErrorLogger(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
-		t.AssertNE(gcfgx.New(g.Cfg()).SetErrorLogger(g.Log()), nil)
-		t.AssertNE(gcfgx.New(g.Cfg()).SetErrorLogger(nil), nil)
+		t.AssertNE(gcfgx.Instance().SetErrorLogger(g.Log()), nil)
+		t.AssertNE(gcfgx.Instance().SetErrorLogger(nil), nil)
 	})
 }
 

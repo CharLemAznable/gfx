@@ -12,7 +12,7 @@ const (
 
 func LoadAdapter(ctx context.Context, fileName ...string) (gcfg.Adapter, error) {
 	apolloConfigFileName := defaultApolloConfigFileName
-	if len(fileName) > 0 {
+	if len(fileName) > 0 && fileName[0] != "" {
 		apolloConfigFileName = fileName[0]
 	}
 	apolloCfg := g.Cfg(apolloConfigFileName)

@@ -11,7 +11,7 @@ func Client() *gclientx.Client {
 }
 
 func Config(name ...string) *gcfgx.Config {
-	return gcfgx.New(g.Config(name...))
+	return gcfgx.Instance(name...)
 }
 
 func Cfg(name ...string) *gcfgx.Config {

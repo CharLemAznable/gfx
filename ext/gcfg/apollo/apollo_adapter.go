@@ -80,7 +80,7 @@ func (c *AdapterApollo) Available(_ context.Context, resource ...string) (ok boo
 		return true
 	}
 	var namespace = c.config.NamespaceName
-	if len(resource) > 0 {
+	if len(resource) > 0 && resource[0] != "" {
 		namespace = resource[0]
 	}
 	return c.client.GetConfig(namespace) != nil
