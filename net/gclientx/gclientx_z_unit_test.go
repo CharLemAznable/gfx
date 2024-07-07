@@ -1,0 +1,74 @@
+package gclientx_test
+
+import (
+	"context"
+	"fmt"
+	"github.com/CharLemAznable/gfx/net/gclientx"
+	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/gclient"
+	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/test/gtest"
+	"github.com/gogf/gf/v2/util/guid"
+	"testing"
+	"time"
+)
+
+var (
+	ctx = context.TODO()
+)
+
+func Test_ClientX(t *testing.T) {
+	s := g.Server(guid.S())
+	s.BindHandler("/hello", func(r *ghttp.Request) {
+		r.Response.Write("world")
+	})
+	s.SetDumpRouterMap(false)
+	_ = s.Start()
+	defer func() { _ = s.Shutdown() }()
+
+	time.Sleep(100 * time.Millisecond)
+	gtest.C(t, func(t *gtest.T) {
+		client := gclientx.New(g.Client())
+		client.Config(nil)
+		client.SetErrorFn(func(ctx context.Context, format string, v ...interface{}) {
+			t.AssertNE(v[0], nil)
+		})
+
+		bytes, err := client.GetBytes(ctx, "")
+		t.AssertNil(bytes)
+		t.AssertNE(err, nil)
+		bytes, err = client.PostBytes(ctx, "")
+		t.AssertNil(bytes)
+		t.AssertNE(err, nil)
+		content, err := client.GetContent(ctx, "")
+		t.Assert(content, "")
+		t.AssertNE(err, nil)
+		content, err = client.PostContent(ctx, "")
+		t.Assert(content, "")
+		t.AssertNE(err, nil)
+
+		url := fmt.Sprintf("http://127.0.0.1:%d", s.GetListenedPort())
+		client.Config(func(client *gclient.Client) *gclient.Client {
+			return client.SetPrefix(url)
+		})
+		bytes, err = client.GetBytes(ctx, "/hello")
+		t.Assert(bytes, []byte("world"))
+		t.AssertNil(err)
+		bytes, err = client.PostBytes(ctx, "/hello")
+		t.Assert(bytes, []byte("world"))
+		t.AssertNil(err)
+		content, err = client.GetContent(ctx, "/hello")
+		t.Assert(content, "world")
+		t.AssertNil(err)
+		content, err = client.PostContent(ctx, "/hello")
+		t.Assert(content, "world")
+		t.AssertNil(err)
+	})
+}
+
+func Test_ClientX_SetErrorLogger(t *testing.T) {
+	gtest.C(t, func(t *gtest.T) {
+		t.AssertNE(gclientx.New(g.Client()).SetErrorLogger(g.Log()), nil)
+		t.AssertNE(gclientx.New(g.Client()).SetErrorLogger(nil), nil)
+	})
+}

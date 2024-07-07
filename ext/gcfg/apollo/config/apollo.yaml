@@ -1,0 +1,11 @@
+AppID: "AppID"
+IP: "IP"
+Cluster: "Cluster"
+NamespaceName: "NamespaceName"
+Key: "Key"
+IsBackupConfig: false
+BackupConfigPath: "BackupConfigPath"
+Secret: "Secret"
+SyncServerTimeout: 600
+MustStart: false
+Watch: false
