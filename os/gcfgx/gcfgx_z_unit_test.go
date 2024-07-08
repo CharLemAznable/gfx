@@ -5,7 +5,6 @@ import (
 	"github.com/CharLemAznable/gfx/errors/gerrorx"
 	"github.com/CharLemAznable/gfx/os/gcfgx"
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/test/gtest"
 	"testing"
 )
@@ -13,29 +12,32 @@ import (
 var (
 	ctx = context.TODO()
 
-	_ = func() *gcfg.Config {
-		cfg := gcfg.Instance("normal")
-		cfg.SetAdapter(&normalAdapter{})
-		return cfg
+	normalAdpt = &normalAdapter{}
+	normalCfgx = func() *gcfgx.Config {
+		c := gcfgx.Instance("normal")
+		c.SetAdapter(normalAdpt)
+		return c
 	}()
-	_ = func() *gcfg.Config {
-		cfg := gcfg.Instance("error")
-		cfg.SetAdapter(&errorAdapter{})
-		return cfg
+
+	errorAdpt = &errorAdapter{}
+	errorCfgx = func() *gcfgx.Config {
+		c := gcfgx.Instance("error")
+		c.SetAdapter(errorAdpt)
+		return c
 	}()
 
 	testErr = gerrorx.ErrorString("error")
 )
 
-func Test_New(t *testing.T) {
+func Test_Instance(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
-		normalCfgx := gcfgx.Instance("normal").SetErrorFn(nil)
+		normalCfgx.SetErrorFn(nil)
 		t.Assert(normalCfgx.MustGet(ctx, "key1", "value1"), "[key1]")
 		t.Assert(normalCfgx.MustGetWithEnv(ctx, "key2", "value2"), "[key2]")
 		t.Assert(normalCfgx.MustGetWithCmd(ctx, "key3", "value3"), "[key3]")
 		t.Assert(normalCfgx.MustData(ctx)["key"], "value")
 
-		errorCfgx := gcfgx.Instance("error").SetErrorFn(nil)
+		errorCfgx.SetErrorFn(nil)
 		t.Assert(errorCfgx.MustGet(ctx, "key1", "value1"), "value1")
 		t.Assert(errorCfgx.MustGetWithEnv(ctx, "key2", "value2"), "value2")
 		t.Assert(errorCfgx.MustGetWithCmd(ctx, "key3", "value3"), "value3")
@@ -49,13 +51,13 @@ func Test_SetErrorFn(t *testing.T) {
 			t.Assert(v[0], testErr)
 		}
 
-		normalCfgx := gcfgx.Instance("normal").SetErrorFn(ffn)
+		normalCfgx.SetErrorFn(ffn)
 		t.Assert(normalCfgx.MustGet(ctx, "key1", "value1"), "[key1]")
 		t.Assert(normalCfgx.MustGetWithEnv(ctx, "key2", "value2"), "[key2]")
 		t.Assert(normalCfgx.MustGetWithCmd(ctx, "key3", "value3"), "[key3]")
 		t.Assert(normalCfgx.MustData(ctx)["key"], "value")
 
-		errorCfgx := gcfgx.Instance("error").SetErrorFn(ffn)
+		errorCfgx.SetErrorFn(ffn)
 		t.AssertNil(errorCfgx.MustGet(ctx, "key1", "value1"))
 		t.AssertNil(errorCfgx.MustGetWithEnv(ctx, "key2", "value2"))
 		t.AssertNil(errorCfgx.MustGetWithCmd(ctx, "key3", "value3"))

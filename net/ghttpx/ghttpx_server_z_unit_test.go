@@ -2,7 +2,6 @@ package ghttpx_test
 
 import (
 	"github.com/CharLemAznable/gfx/net/ghttpx"
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/genv"
@@ -12,12 +11,12 @@ import (
 )
 
 func Test_ConfigServer_Default(t *testing.T) {
-	s := g.Server()
+	s := ghttpx.GetServer()
 	s.BindHandler("/hello", func(r *ghttp.Request) {
 		r.Response.Write("world")
 	})
 	s.SetDumpRouterMap(false)
-	ghttpx.ConfigServer(s, ghttpx.WithDefaultAddr(":8080"))
+	s.SetDefaultAddr(":8080")
 	_ = s.Start()
 	defer func() { _ = s.Shutdown() }()
 
@@ -30,12 +29,12 @@ func Test_ConfigServer_Default(t *testing.T) {
 func Test_ConfigServer_Opt(t *testing.T) {
 	_ = genv.Set("GF_GHTTP_SERVER_OPT_ADDRESS", ":8081")
 	defer func() { _ = genv.Remove("GF_GHTTP_SERVER_OPT_ADDRESS") }()
-	s := g.Server("opt")
+	s := ghttpx.GetServer("opt")
 	s.BindHandler("/hello", func(r *ghttp.Request) {
 		r.Response.Write("world")
 	})
 	s.SetDumpRouterMap(false)
-	ghttpx.ConfigServer(s, ghttpx.WithRandomAddr())
+	s.SetRandomAddr()
 	_ = s.Start()
 	defer func() { _ = s.Shutdown() }()
 
@@ -47,12 +46,12 @@ func Test_ConfigServer_Opt(t *testing.T) {
 
 func Test_ConfigServer_Env(t *testing.T) {
 	gcmd.Init([]string{"--gf.ghttp.server.env.address=:8082"}...)
-	s := g.Server("env")
+	s := ghttpx.GetServer("env")
 	s.BindHandler("/hello", func(r *ghttp.Request) {
 		r.Response.Write("world")
 	})
 	s.SetDumpRouterMap(false)
-	ghttpx.ConfigServer(s, ghttpx.WithDefaultHttpAddr())
+	s.SetDefaultHttpAddr()
 	_ = s.Start()
 	defer func() { _ = s.Shutdown() }()
 

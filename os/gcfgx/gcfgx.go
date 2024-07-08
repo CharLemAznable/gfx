@@ -9,12 +9,12 @@ import (
 )
 
 type Config struct {
-	config  *gcfg.Config
+	gcfg.Config
 	errorFn func(ctx context.Context, format string, v ...interface{})
 }
 
 func New(config *gcfg.Config) *Config {
-	return &Config{config: config}
+	return &Config{Config: *config}
 }
 
 func (c *Config) SetErrorFn(errorFn func(ctx context.Context, format string, v ...interface{})) *Config {
@@ -31,7 +31,7 @@ func (c *Config) SetErrorLogger(logger *glog.Logger) *Config {
 }
 
 func (c *Config) MustGet(ctx context.Context, pattern string, def ...interface{}) *gvar.Var {
-	v, err := c.config.Get(ctx, pattern, def...)
+	v, err := c.Config.Get(ctx, pattern, def...)
 	if err != nil {
 		if c.errorFn != nil {
 			c.errorFn(ctx, `%+v`, err)
@@ -43,7 +43,7 @@ func (c *Config) MustGet(ctx context.Context, pattern string, def ...interface{}
 }
 
 func (c *Config) MustGetWithEnv(ctx context.Context, pattern string, def ...interface{}) *gvar.Var {
-	v, err := c.config.GetWithEnv(ctx, pattern, def...)
+	v, err := c.Config.GetWithEnv(ctx, pattern, def...)
 	if err != nil {
 		if c.errorFn != nil {
 			c.errorFn(ctx, `%+v`, err)
@@ -55,7 +55,7 @@ func (c *Config) MustGetWithEnv(ctx context.Context, pattern string, def ...inte
 }
 
 func (c *Config) MustGetWithCmd(ctx context.Context, pattern string, def ...interface{}) *gvar.Var {
-	v, err := c.config.GetWithCmd(ctx, pattern, def...)
+	v, err := c.Config.GetWithCmd(ctx, pattern, def...)
 	if err != nil {
 		if c.errorFn != nil {
 			c.errorFn(ctx, `%+v`, err)
@@ -67,7 +67,7 @@ func (c *Config) MustGetWithCmd(ctx context.Context, pattern string, def ...inte
 }
 
 func (c *Config) MustData(ctx context.Context) map[string]interface{} {
-	v, err := c.config.Data(ctx)
+	v, err := c.Config.Data(ctx)
 	if err != nil && c.errorFn != nil {
 		c.errorFn(ctx, `%+v`, err)
 	}

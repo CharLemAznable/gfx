@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/CharLemAznable/gfx/net/gclientx"
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/net/gclient"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/test/gtest"
 	"github.com/gogf/gf/v2/util/guid"
@@ -29,38 +28,35 @@ func Test_ClientX(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	gtest.C(t, func(t *gtest.T) {
 		client := gclientx.New(g.Client())
-		client.Config(nil)
 		client.SetErrorFn(func(ctx context.Context, format string, v ...interface{}) {
 			t.AssertNE(v[0], nil)
 		})
 
-		bytes, err := client.GetBytes(ctx, "")
+		bytes, err := client.GetBytesErr(ctx, "")
 		t.AssertNil(bytes)
 		t.AssertNE(err, nil)
-		bytes, err = client.PostBytes(ctx, "")
+		bytes, err = client.PostBytesErr(ctx, "")
 		t.AssertNil(bytes)
 		t.AssertNE(err, nil)
-		content, err := client.GetContent(ctx, "")
+		content, err := client.GetContentErr(ctx, "")
 		t.Assert(content, "")
 		t.AssertNE(err, nil)
-		content, err = client.PostContent(ctx, "")
+		content, err = client.PostContentErr(ctx, "")
 		t.Assert(content, "")
 		t.AssertNE(err, nil)
 
 		url := fmt.Sprintf("http://127.0.0.1:%d", s.GetListenedPort())
-		client.Config(func(client *gclient.Client) *gclient.Client {
-			return client.SetPrefix(url)
-		})
-		bytes, err = client.GetBytes(ctx, "/hello")
+		client.SetPrefix(url)
+		bytes, err = client.GetBytesErr(ctx, "/hello")
 		t.Assert(bytes, []byte("world"))
 		t.AssertNil(err)
-		bytes, err = client.PostBytes(ctx, "/hello")
+		bytes, err = client.PostBytesErr(ctx, "/hello")
 		t.Assert(bytes, []byte("world"))
 		t.AssertNil(err)
-		content, err = client.GetContent(ctx, "/hello")
+		content, err = client.GetContentErr(ctx, "/hello")
 		t.Assert(content, "world")
 		t.AssertNil(err)
-		content, err = client.PostContent(ctx, "/hello")
+		content, err = client.PostContentErr(ctx, "/hello")
 		t.Assert(content, "world")
 		t.AssertNil(err)
 	})

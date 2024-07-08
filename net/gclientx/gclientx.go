@@ -7,19 +7,12 @@ import (
 )
 
 type Client struct {
-	client  *gclient.Client
+	gclient.Client
 	errorFn func(ctx context.Context, format string, v ...interface{})
 }
 
 func New(client *gclient.Client) *Client {
-	return &Client{client: client}
-}
-
-func (c *Client) Config(fn func(client *gclient.Client) *gclient.Client) *Client {
-	if fn != nil {
-		c.client = fn(c.client)
-	}
-	return c
+	return &Client{Client: *client}
 }
 
 func (c *Client) SetErrorFn(errorFn func(ctx context.Context, format string, v ...interface{})) *Client {
