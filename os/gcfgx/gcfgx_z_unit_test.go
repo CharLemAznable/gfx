@@ -12,24 +12,22 @@ import (
 var (
 	ctx = context.TODO()
 
-	normalAdpt = &normalAdapter{}
 	normalCfgx = func() *gcfgx.Config {
 		c := gcfgx.Instance("normal")
-		c.SetAdapter(normalAdpt)
+		c.SetAdapter(&normalAdapter{})
 		return c
 	}()
 
-	errorAdpt = &errorAdapter{}
 	errorCfgx = func() *gcfgx.Config {
 		c := gcfgx.Instance("error")
-		c.SetAdapter(errorAdpt)
+		c.SetAdapter(&errorAdapter{})
 		return c
 	}()
 
 	testErr = gerrorx.ErrorString("error")
 )
 
-func Test_Instance(t *testing.T) {
+func Test_Default(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
 		normalCfgx.SetErrorFn(nil)
 		t.Assert(normalCfgx.MustGet(ctx, "key1", "value1"), "[key1]")

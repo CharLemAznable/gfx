@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func Test_ConfigServer_Default(t *testing.T) {
+func Test_Server_SetDefaultAddr(t *testing.T) {
 	s := ghttpx.GetServer()
 	s.BindHandler("/hello", func(r *ghttp.Request) {
 		r.Response.Write("world")
@@ -26,7 +26,7 @@ func Test_ConfigServer_Default(t *testing.T) {
 	})
 }
 
-func Test_ConfigServer_Opt(t *testing.T) {
+func Test_Server_Opt_SetRandomAddr(t *testing.T) {
 	_ = genv.Set("GF_GHTTP_SERVER_OPT_ADDRESS", ":8081")
 	defer func() { _ = genv.Remove("GF_GHTTP_SERVER_OPT_ADDRESS") }()
 	s := ghttpx.GetServer("opt")
@@ -44,7 +44,7 @@ func Test_ConfigServer_Opt(t *testing.T) {
 	})
 }
 
-func Test_ConfigServer_Env(t *testing.T) {
+func Test_Server_Env_SetDefaultHttpAddr(t *testing.T) {
 	gcmd.Init([]string{"--gf.ghttp.server.env.address=:8082"}...)
 	s := ghttpx.GetServer("env")
 	s.BindHandler("/hello", func(r *ghttp.Request) {
