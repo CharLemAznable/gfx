@@ -4,11 +4,11 @@ import (
 	"github.com/CharLemAznable/gfx/net/gclientx"
 	"github.com/CharLemAznable/gfx/net/ghttpx"
 	"github.com/CharLemAznable/gfx/os/gcfgx"
-	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/gclient"
 )
 
-func Client() *gclientx.Client {
-	return gclientx.New(g.Client())
+func Client(client ...*gclient.Client) *gclientx.Client {
+	return gclientx.New(client...)
 }
 
 func Server(name ...interface{}) *ghttpx.Server {

@@ -46,7 +46,7 @@ func Test_ClientX(t *testing.T) {
 		t.AssertNE(err, nil)
 
 		url := fmt.Sprintf("http://127.0.0.1:%d", s.GetListenedPort())
-		client.SetPrefix(url)
+		client.Client.SetPrefix(url)
 		bytes, err = client.GetBytesErr(ctx, "/hello")
 		t.Assert(bytes, []byte("world"))
 		t.AssertNil(err)
@@ -64,7 +64,7 @@ func Test_ClientX(t *testing.T) {
 
 func Test_ClientX_SetErrorLogger(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
-		t.AssertNE(gclientx.New(g.Client()).SetErrorLogger(g.Log()), nil)
-		t.AssertNE(gclientx.New(g.Client()).SetErrorLogger(nil), nil)
+		t.AssertNE(gclientx.New().SetErrorLogger(g.Log()), nil)
+		t.AssertNE(gclientx.New().SetErrorLogger(nil), nil)
 	})
 }
