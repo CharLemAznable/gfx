@@ -46,7 +46,7 @@ func Test_ClientX(t *testing.T) {
 		t.AssertNE(err, nil)
 
 		url := fmt.Sprintf("http://127.0.0.1:%d", s.GetListenedPort())
-		client.Client.SetPrefix(url)
+		client = client.Prefix(url)
 		bytes, err = client.GetBytesErr(ctx, "/hello")
 		t.Assert(bytes, []byte("world"))
 		t.AssertNil(err)

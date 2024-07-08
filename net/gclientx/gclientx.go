@@ -30,3 +30,7 @@ func (c *Client) SetErrorLogger(logger *glog.Logger) *Client {
 		return c.SetErrorFn(nil)
 	}
 }
+
+func (c *Client) Clone() *Client {
+	return New(c.Client.Clone()).SetErrorFn(c.errorFn)
+}
