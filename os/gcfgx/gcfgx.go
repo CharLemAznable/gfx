@@ -3,7 +3,10 @@ package gcfgx
 import (
 	"context"
 	"github.com/CharLemAznable/gfx/container/gvarx"
+	"github.com/CharLemAznable/gfx/os/gcmdx"
 	"github.com/gogf/gf/v2/container/gvar"
+	"github.com/gogf/gf/v2/errors/gcode"
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/os/glog"
 )
@@ -70,6 +73,32 @@ func (c *Config) MustData(ctx context.Context) map[string]interface{} {
 	v, err := c.Config.Data(ctx)
 	if err != nil && c.errorFn != nil {
 		c.errorFn(ctx, `%+v`, err)
+	}
+	return v
+}
+
+func (c *Config) GetWithCmdAndEnv(ctx context.Context, pattern string, def ...interface{}) (*gvar.Var, error) {
+	value, err := c.Get(ctx, pattern)
+	if err != nil && gerror.Code(err) != gcode.CodeNotFound {
+		return nil, err
+	}
+	if value == nil {
+		if v := gcmdx.GetOptWithEnv(pattern); v != nil {
+			return v, nil
+		}
+		return gvarx.DefaultOrNil(def...), nil
+	}
+	return value, nil
+}
+
+func (c *Config) MustGetWithCmdAndEnv(ctx context.Context, pattern string, def ...interface{}) *gvar.Var {
+	v, err := c.GetWithCmdAndEnv(ctx, pattern, def...)
+	if err != nil {
+		if c.errorFn != nil {
+			c.errorFn(ctx, `%+v`, err)
+		} else {
+			return gvarx.DefaultOrNil(def...)
+		}
 	}
 	return v
 }

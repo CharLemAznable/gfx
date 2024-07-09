@@ -13,3 +13,10 @@ func Test_DefaultOrNil(t *testing.T) {
 		t.Assert(utils.DefaultOrNil[any]("test", "demo").String(), "test")
 	})
 }
+
+func Test_FormatString(t *testing.T) {
+	gtest.C(t, func(t *gtest.T) {
+		t.Assert(utils.FormatCmdKey("TEST_DEMO"), "test.demo")
+		t.Assert(utils.FormatEnvKey("test.demo"), "TEST_DEMO")
+	})
+}
