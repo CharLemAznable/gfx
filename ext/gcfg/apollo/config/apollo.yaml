@@ -1,11 +1,12 @@
-AppID: "AppID"
-IP: "IP"
-Cluster: "Cluster"
-NamespaceName: "NamespaceName"
-Key: "Key"
-IsBackupConfig: false
-BackupConfigPath: "BackupConfigPath"
-Secret: "Secret"
-SyncServerTimeout: 600
-MustStart: false
-Watch: false
+apollo:
+  appId: "test"
+  ip: "localhost:8888"
+  cluster: "default"
+  namespaceName: "application"
+  key: "config"
+  isBackupConfig: false
+  backupConfigPath: ""
+  secret: ""
+  syncServerTimeout: 0
+  mustStart: false
+  watch: false

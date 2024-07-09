@@ -1,2 +1,3 @@
-AppID: "AppID"
-IP: "IP"
+apollo:
+  appId: "AppID"
+  ip: "IP"
