@@ -28,9 +28,6 @@ func Test_ClientX(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	gtest.C(t, func(t *gtest.T) {
 		client := gclientx.New(g.Client())
-		client.SetErrorFn(func(ctx context.Context, format string, v ...interface{}) {
-			t.AssertNE(v[0], nil)
-		})
 
 		bytes, err := client.GetBytesErr(ctx, "")
 		t.AssertNil(bytes)
@@ -43,6 +40,12 @@ func Test_ClientX(t *testing.T) {
 		t.AssertNE(err, nil)
 		content, err = client.PostContentErr(ctx, "")
 		t.Assert(content, "")
+		t.AssertNE(err, nil)
+		v, err := client.GetVarErr(ctx, "")
+		t.AssertNil(v.Val())
+		t.AssertNE(err, nil)
+		v, err = client.PostVarErr(ctx, "")
+		t.AssertNil(v.Val())
 		t.AssertNE(err, nil)
 
 		url := fmt.Sprintf("http://127.0.0.1:%d", s.GetListenedPort())
@@ -59,12 +62,18 @@ func Test_ClientX(t *testing.T) {
 		content, err = client.PostContentErr(ctx, "/hello")
 		t.Assert(content, "world")
 		t.AssertNil(err)
+		v, err = client.GetVarErr(ctx, "/hello")
+		t.Assert(v.Val(), "world")
+		t.AssertNil(err)
+		v, err = client.PostVarErr(ctx, "/hello")
+		t.Assert(v.Val(), "world")
+		t.AssertNil(err)
 	})
 }
 
 func Test_ClientX_SetErrorLogger(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
-		t.AssertNE(gclientx.New().SetErrorLogger(g.Log()), nil)
-		t.AssertNE(gclientx.New().SetErrorLogger(nil), nil)
+		t.AssertNE(gclientx.New().SetIntLog(g.Log()), nil)
+		t.AssertNE(gclientx.New().SetIntLog(nil), nil)
 	})
 }
