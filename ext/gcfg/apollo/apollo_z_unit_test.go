@@ -3,8 +3,6 @@ package apollo_test
 import (
 	"context"
 	"github.com/CharLemAznable/gfx/ext/gcfg/apollo"
-	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/genv"
 	"github.com/gogf/gf/v2/test/gtest"
@@ -20,10 +18,6 @@ func Test_New_Default(t *testing.T) {
 		adapter, err := apollo.LoadAdapter(ctx)
 		t.AssertNE(adapter, nil)
 		t.AssertNil(err)
-
-		config := gcfg.NewWithAdapter(adapter)
-		value, err := config.Get(ctx, "key")
-		g.Dump(value, err)
 	})
 }
 

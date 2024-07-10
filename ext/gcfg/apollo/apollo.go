@@ -5,8 +5,6 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/os/gcmd"
-	"os"
-	"strings"
 )
 
 const (
@@ -26,34 +24,23 @@ func LoadAdapter(ctx context.Context, fileName ...string) (gcfg.Adapter, error) 
 		apolloConfigFileName = fileName[0]
 	}
 	apolloCfg, _ := g.Cfg(apolloConfigFileName).Get(ctx, apolloConfigKey)
-	apolloConfig := Config{}
-	_ = apolloCfg.Struct(&apolloConfig)
+	apolloConfig := &Config{}
+	_ = apolloCfg.Struct(apolloConfig)
 
 	if apolloConfig.AppID == "" {
-		apolloConfig.AppID = getOptWithEnv(apolloAppIdPattern)
+		apolloConfig.AppID = gcmd.GetOptWithEnv(apolloAppIdPattern).String()
 	}
 	if apolloConfig.IP == "" {
-		apolloConfig.IP = getOptWithEnv(apolloIPPattern)
+		apolloConfig.IP = gcmd.GetOptWithEnv(apolloIPPattern).String()
 	}
 	if apolloConfig.Cluster == "" {
-		apolloConfig.Cluster = getOptWithEnv(apolloClusterPattern)
+		apolloConfig.Cluster = gcmd.GetOptWithEnv(apolloClusterPattern).String()
 	}
 	if apolloConfig.NamespaceName == "" {
-		apolloConfig.NamespaceName = getOptWithEnv(apolloNamespacePattern)
+		apolloConfig.NamespaceName = gcmd.GetOptWithEnv(apolloNamespacePattern).String()
 	}
 	if apolloConfig.Key == "" {
-		apolloConfig.Key = getOptWithEnv(apolloKeyPattern)
+		apolloConfig.Key = gcmd.GetOptWithEnv(apolloKeyPattern).String()
 	}
 	return NewAdapterApollo(ctx, apolloConfig)
-}
-
-func getOptWithEnv(key string) string {
-	if v := gcmd.GetOpt(key); !v.IsEmpty() {
-		return v.String()
-	}
-	envKey := strings.ToUpper(strings.ReplaceAll(key, ".", "_"))
-	if r, ok := os.LookupEnv(envKey); ok && r != "" {
-		return r
-	}
-	return ""
 }
