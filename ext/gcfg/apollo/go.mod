@@ -3,7 +3,7 @@ module github.com/CharLemAznable/gfx/ext/gcfg/apollo
 go 1.20
 
 require (
-	github.com/CharLemAznable/gfx/ext/agollox v0.3.3
+	github.com/CharLemAznable/gfx/ext/agollox v0.3.4
 	github.com/apolloconfig/agollo/v4 v4.4.0
 	github.com/gogf/gf/v2 v2.7.2
 )

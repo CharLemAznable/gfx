@@ -1,4 +1,4 @@
-module github.com/CharLemAznable/gfx/agollox
+module github.com/CharLemAznable/gfx/ext/agollox
 
 go 1.20
 
