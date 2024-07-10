@@ -11,6 +11,9 @@ import (
 )
 
 func Test_Server_SetDefaultAddr(t *testing.T) {
+	_ = genv.Set("GF_GHTTP_SERVER_ADDRESS", "")
+	defer func() { _ = genv.Remove("GF_GHTTP_SERVER_ADDRESS") }()
+	gcmd.Init([]string{"--gf.ghttp.server.address="}...)
 	s := ghttpx.GetServer()
 	s.BindHandler("/hello", func(r *ghttp.Request) {
 		r.Response.Write("world")
@@ -26,15 +29,15 @@ func Test_Server_SetDefaultAddr(t *testing.T) {
 	})
 }
 
-func Test_Server_Opt_SetRandomAddr(t *testing.T) {
-	_ = genv.Set("GF_GHTTP_SERVER_OPT_ADDRESS", ":8081")
-	defer func() { _ = genv.Remove("GF_GHTTP_SERVER_OPT_ADDRESS") }()
-	s := ghttpx.GetServer("opt")
+func Test_Server_Env_SetRandomAddr(t *testing.T) {
+	_ = genv.Set("GF_GHTTP_SERVER_ENV_ADDRESS", ":8081")
+	defer func() { _ = genv.Remove("GF_GHTTP_SERVER_ENV_ADDRESS") }()
+	s := ghttpx.GetServer("env")
 	s.BindHandler("/hello", func(r *ghttp.Request) {
 		r.Response.Write("world")
 	})
 	s.SetDumpRouterMap(false)
-	s.SetRandomAddr()
+	s.SetRandomAddr() // :0
 	_ = s.Start()
 	defer func() { _ = s.Shutdown() }()
 
@@ -44,14 +47,14 @@ func Test_Server_Opt_SetRandomAddr(t *testing.T) {
 	})
 }
 
-func Test_Server_Env_SetDefaultHttpAddr(t *testing.T) {
-	gcmd.Init([]string{"--gf.ghttp.server.env.address=:8082"}...)
-	s := ghttpx.GetServer("env")
+func Test_Server_Cmd_SetDefaultHttpAddr(t *testing.T) {
+	gcmd.Init([]string{"--gf.ghttp.server.cmd.address=:8082"}...)
+	s := ghttpx.GetServer("cmd")
 	s.BindHandler("/hello", func(r *ghttp.Request) {
 		r.Response.Write("world")
 	})
 	s.SetDumpRouterMap(false)
-	s.SetDefaultHttpAddr()
+	s.SetDefaultHttpAddr() // :80
 	_ = s.Start()
 	defer func() { _ = s.Shutdown() }()
 

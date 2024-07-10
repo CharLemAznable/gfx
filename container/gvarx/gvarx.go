@@ -8,3 +8,17 @@ import (
 func DefaultOrNil(def ...interface{}) *gvar.Var {
 	return utils.DefaultOrNil[any](def...)
 }
+
+func DefaultIfNil(v *gvar.Var, def ...interface{}) *gvar.Var {
+	if v == nil || v.IsNil() {
+		return utils.DefaultOrNil[any](def...)
+	}
+	return v
+}
+
+func DefaultIfEmpty(v *gvar.Var, def ...interface{}) *gvar.Var {
+	if v == nil || v.IsEmpty() {
+		return utils.DefaultOrNil[any](def...)
+	}
+	return v
+}

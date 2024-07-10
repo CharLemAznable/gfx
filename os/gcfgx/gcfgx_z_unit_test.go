@@ -5,6 +5,7 @@ import (
 	"github.com/CharLemAznable/gfx/errors/gerrorx"
 	"github.com/CharLemAznable/gfx/os/gcfgx"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/genv"
 	"github.com/gogf/gf/v2/test/gtest"
 	"testing"
@@ -82,6 +83,13 @@ func Test_GetWithCmdAndEnv(t *testing.T) {
 		_ = genv.Set("NOT_FOUND", "DEFAULT")
 		defer func() { _ = genv.Remove("NOT_FOUND") }()
 		t.Assert(normalCfgx.MustGetWithCmdAndEnv(ctx, "not.found", "def"), "DEFAULT")
+		_ = genv.Set("NOT_FOUND", "")
+		t.Assert(normalCfgx.MustGetWithCmdAndEnv(ctx, "not.found", "def").Val(), "")
+
+		gcmd.Init([]string{"--not.found=Default"}...)
+		t.Assert(normalCfgx.MustGetWithCmdAndEnv(ctx, "not.found", "def"), "Default")
+		gcmd.Init([]string{"--not.found="}...)
+		t.Assert(normalCfgx.MustGetWithCmdAndEnv(ctx, "not.found", "def").Val(), "")
 	})
 }
 

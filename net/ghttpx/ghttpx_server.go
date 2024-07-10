@@ -2,11 +2,11 @@ package ghttpx
 
 import (
 	"fmt"
-	"github.com/CharLemAznable/gfx/os/gcmdx"
+	"github.com/CharLemAznable/gfx/container/gvarx"
 	"github.com/gogf/gf/v2/container/gmap"
-	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/util/gconv"
 )
 
@@ -32,14 +32,11 @@ const (
 )
 
 func (server *Server) SetDefaultAddr(address string) *Server {
-	var addrVar *gvar.Var
-	serverName := server.Server.GetName()
-	if serverName == ghttp.DefaultServerName {
-		addrVar = gcmdx.GetOptWithEnv(cmdEnvKeyForDefaultAddress, address)
-	} else {
-		key := fmt.Sprintf(cmdEnvKeyFormatForAddress, serverName)
-		addrVar = gcmdx.GetOptWithEnv(key, address)
+	cmdEnvKey := cmdEnvKeyForDefaultAddress
+	if serverName := server.Server.GetName(); serverName != ghttp.DefaultServerName {
+		cmdEnvKey = fmt.Sprintf(cmdEnvKeyFormatForAddress, serverName)
 	}
+	addrVar := gvarx.DefaultIfEmpty(gcmd.GetOptWithEnv(cmdEnvKey), address)
 	server.Server.SetAddr(addrVar.String())
 	return server
 }

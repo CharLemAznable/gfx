@@ -3,11 +3,11 @@ package gcfgx
 import (
 	"context"
 	"github.com/CharLemAznable/gfx/container/gvarx"
-	"github.com/CharLemAznable/gfx/os/gcmdx"
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/errors/gcode"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gcfg"
+	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/os/glog"
 )
 
@@ -83,7 +83,7 @@ func (c *Config) GetWithCmdAndEnv(ctx context.Context, pattern string, def ...in
 		return nil, err
 	}
 	if value == nil {
-		if v := gcmdx.GetOptWithEnv(pattern); v != nil {
+		if v := gcmd.GetOptWithEnv(pattern); v != nil {
 			return v, nil
 		}
 		return gvarx.DefaultOrNil(def...), nil
