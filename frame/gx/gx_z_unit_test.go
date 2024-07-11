@@ -10,6 +10,7 @@ func Test_Object(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
 		t.AssertNE(gx.Client(), nil)
 		t.AssertNE(gx.Server(), nil)
+		t.AssertNE(gx.ViewX(), nil)
 		t.AssertNE(gx.Config(), nil)
 		t.AssertNE(gx.Cfg(), nil)
 	})

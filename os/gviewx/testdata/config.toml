@@ -1,0 +1,4 @@
+[viewer]
+  delimiters  =  ["${", "}"]
+  [viewer.data]
+    Name    = "Joe"

@@ -3,6 +3,8 @@ package gviewx
 import (
 	"github.com/gogf/gf/v2/i18n/gi18n"
 	"github.com/gogf/gf/v2/os/gview"
+	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/gogf/gf/v2/util/gutil"
 )
 
 type Config struct {
@@ -24,6 +26,17 @@ func (view *View) SetConfig(config Config) *View {
 		view.SetI18n(config.I18nManager)
 	}
 	return view
+}
+
+func (view *View) SetConfigWithMap(m map[string]interface{}) error {
+	m = gutil.MapCopy(m)
+	config := &Config{}
+	err := gconv.Struct(m, config)
+	if err != nil {
+		return err
+	}
+	view.SetConfig(*config)
+	return nil
 }
 
 func (view *View) Assigns(data gview.Params) {

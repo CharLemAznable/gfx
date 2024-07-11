@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/i18n/gi18n"
+	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/test/gtest"
 	"testing"
 )
@@ -36,17 +37,20 @@ func Test_Default(t *testing.T) {
 
 func Test_Config(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
+		testAdapter, _ := gcfg.NewAdapterFile()
+		_ = testAdapter.AddPath("testdata")
+		oriAdapter := g.Config().GetAdapter()
+		g.Config().SetAdapter(testAdapter)
+
 		view := gviewx.Instance("test").
 			SetAdapter(gviewx.NewAdapterFile("testdata")).
 			SetConfig(gviewx.Config{
-				Data: g.Map{
-					"Name": "Joe",
-				},
-				Delimiters:  []string{"${", "}"},
 				I18nManager: gi18n.Instance(),
 			})
 		result, err := view.Parse(ctx, "test2", g.Map{"Name": "John"})
 		t.AssertNil(err)
 		t.Assert(result, "Hello again, Joe!")
+
+		g.Config().SetAdapter(oriAdapter)
 	})
 }

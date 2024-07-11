@@ -2,7 +2,6 @@ package gviewx
 
 import (
 	"context"
-	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/os/gview"
 )
 
@@ -24,20 +23,6 @@ func NewWithAdapter(adapter Adapter) *View {
 		adapter: adapter,
 		view:    gview.New(),
 	}
-}
-
-const DefaultInstanceName = "default"
-
-var localInstances = gmap.NewStrAnyMap(true)
-
-func Instance(name ...string) *View {
-	var instanceName = DefaultInstanceName
-	if len(name) > 0 && name[0] != "" {
-		instanceName = name[0]
-	}
-	return localInstances.GetOrSetFuncLock(instanceName, func() interface{} {
-		return New()
-	}).(*View)
 }
 
 func (view *View) SetAdapter(adapter Adapter) *View {
