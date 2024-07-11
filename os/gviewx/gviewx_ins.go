@@ -43,10 +43,9 @@ func tryConfigView(ctx context.Context, view *View, instanceName string) {
 	if len(configMap) == 0 {
 		configMap = g.Config().MustGet(ctx, configNodeName).Map()
 	}
-	if len(configMap) == 0 {
-		return
-	}
-	if err = view.SetConfigWithMap(configMap); err != nil {
-		panic(err)
+	if len(configMap) > 0 {
+		if err = view.SetConfigWithMap(configMap); err != nil {
+			panic(err)
+		}
 	}
 }
