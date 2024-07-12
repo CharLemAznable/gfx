@@ -2,14 +2,11 @@ package agollox
 
 import (
 	"github.com/apolloconfig/agollo/v4"
-	"github.com/apolloconfig/agollo/v4/env/config"
 	"github.com/apolloconfig/agollo/v4/storage"
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/util/gconv"
 )
-
-type Config = config.AppConfig
 
 type Client struct {
 	client      agollo.Client
@@ -18,11 +15,6 @@ type Client struct {
 	initialized bool
 	onChangeFn  func(event *storage.ChangeEvent)
 }
-
-const (
-	defaultCluster   = "default"
-	defaultNamespace = "application"
-)
 
 func NewClient(config *Config) (*Client, error) {
 	if config.Cluster == "" {

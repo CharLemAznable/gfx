@@ -1,3 +1,2 @@
-apollo:
-  appId: "AppID"
-  ip: "IP"
+appId: ""
+ip: ""

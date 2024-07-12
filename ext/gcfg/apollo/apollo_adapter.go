@@ -6,14 +6,9 @@ import (
 	"github.com/apolloconfig/agollo/v4/storage"
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gcfg"
+	"github.com/gogf/gf/v2/util/gvalid"
 )
-
-type Config struct {
-	agollox.Config
-	Key string
-}
 
 type AdapterApollo struct {
 	client *agollox.Client
@@ -22,16 +17,21 @@ type AdapterApollo struct {
 }
 
 var (
-	configRules = g.MapStrStr{
-		"AppID": "required",
-		"IP":    "required",
-		"Key":   "required",
+	configRules = map[string]string{
+		"appId": "required",
+		"ip":    "required",
+		"key":   "required",
+	}
+	configMessage = map[string]interface{}{
+		"appId": "Apollo AppId field is required",
+		"ip":    "Apollo IP field is required",
+		"key":   "Apollo Key field is required",
 	}
 )
 
 func NewAdapterApollo(ctx context.Context, config *Config) (adapter gcfg.Adapter, err error) {
 	// Data validation.
-	err = g.Validator().Rules(configRules).Data(config).Run(ctx)
+	err = gvalid.New().Rules(configRules).Messages(configMessage).Data(config).Run(ctx)
 	if err != nil {
 		return nil, err
 	}

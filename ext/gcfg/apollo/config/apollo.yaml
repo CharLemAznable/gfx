@@ -1,12 +1,10 @@
-apollo:
-  appId: "test"
-  ip: "localhost:8888"
-  cluster: "default"
-  namespaceName: "application"
-  key: "config"
-  isBackupConfig: false
-  backupConfigPath: ""
-  secret: ""
-  syncServerTimeout: 0
-  mustStart: false
-  watch: false
+appId: "test"
+cluster: "default"
+namespaceName: "application"
+ip: "localhost:8888"
+isBackupConfig: false
+backupConfigPath: ""
+secret: ""
+label: ""
+syncServerTimeout: 0
+key: "config"
