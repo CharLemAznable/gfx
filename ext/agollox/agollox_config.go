@@ -5,6 +5,7 @@ import (
 	"github.com/apolloconfig/agollo/v4/env/config"
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/os/gcfg"
+	"github.com/gogf/gf/v2/os/gcmd"
 	"github.com/gogf/gf/v2/util/gutil"
 )
 
@@ -34,6 +35,11 @@ const (
 	ConfigSecretKey            = "secret"
 	ConfigLabelKey             = "label"
 	ConfigSyncServerTimeoutKey = "syncServerTimeout"
+
+	apolloAppIdPattern     = "gf.apollo.appid"
+	apolloClusterPattern   = "gf.apollo.cluster"
+	apolloNamespacePattern = "gf.apollo.namespace"
+	apolloIPPattern        = "gf.apollo.ip"
 )
 
 func LoadConfig(ctx context.Context, pointer interface{}, fileName string, def ...map[string]interface{}) error {
@@ -62,18 +68,36 @@ func loadConfigFileMap(ctx context.Context, fileName string) (map[string]interfa
 	if err != nil {
 		return nil, err
 	}
-	return gutil.MapCopy(configMap), nil
+	return mapOmitNil(gutil.MapCopy(configMap)), nil
 }
 
 func loadDefMap(def ...map[string]interface{}) map[string]interface{} {
+	cmdMap := mapOmitNil(map[string]interface{}{
+		ConfigAppIdKey:     gcmd.GetOptWithEnv(apolloAppIdPattern).Val(),
+		ConfigClusterKey:   gcmd.GetOptWithEnv(apolloClusterPattern).Val(),
+		ConfigNamespaceKey: gcmd.GetOptWithEnv(apolloNamespacePattern).Val(),
+		ConfigIPKey:        gcmd.GetOptWithEnv(apolloIPPattern).Val(),
+	})
 	if len(def) > 0 && len(def[0]) > 0 {
-		m := gutil.MapCopy(def[0])
-		for k, v := range m {
-			if v == nil {
-				delete(m, k)
+		defMap := mapOmitNil(gutil.MapCopy(def[0]))
+		for key, value := range cmdMap {
+			if !gutil.MapContainsPossibleKey(defMap, key) {
+				defMap[key] = value // fill def map with cmd/env map
 			}
 		}
-		return m
+		return defMap
 	}
-	return map[string]interface{}{}
+	return cmdMap
+}
+
+func mapOmitNil(data map[string]interface{}) map[string]interface{} {
+	if len(data) == 0 {
+		return data
+	}
+	for k, v := range data {
+		if v == nil {
+			delete(data, k)
+		}
+	}
+	return data
 }

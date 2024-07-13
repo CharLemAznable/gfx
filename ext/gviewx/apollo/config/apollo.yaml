@@ -7,4 +7,3 @@ backupConfigPath: ""
 secret: ""
 label: ""
 syncServerTimeout: 0
-key: "config"
