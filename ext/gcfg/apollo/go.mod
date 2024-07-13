@@ -4,12 +4,12 @@ go 1.20
 
 require (
 	github.com/CharLemAznable/gfx/ext/agollox v0.3.4
-	github.com/apolloconfig/agollo/v4 v4.4.0
 	github.com/gogf/gf/v2 v2.7.2
 )
 
 require (
 	github.com/BurntSushi/toml v1.3.2 // indirect
+	github.com/apolloconfig/agollo/v4 v4.4.0 // indirect
 	github.com/clbanning/mxj/v2 v2.7.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.16.0 // indirect

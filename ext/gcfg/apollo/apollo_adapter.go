@@ -3,7 +3,6 @@ package apollo
 import (
 	"context"
 	"github.com/CharLemAznable/gfx/ext/agollox"
-	"github.com/apolloconfig/agollo/v4/storage"
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gcfg"
@@ -70,7 +69,7 @@ func (c *AdapterApollo) Data(_ context.Context) (data map[string]interface{}, er
 	return c.value.Val().(*gjson.Json).Map(), nil
 }
 
-func (c *AdapterApollo) onChange(event *storage.ChangeEvent) {
+func (c *AdapterApollo) onChange(event *agollox.ChangeEvent) {
 	if _, ok := event.Changes[c.config.Key]; !ok {
 		return
 	}

@@ -8,12 +8,14 @@ import (
 	"github.com/gogf/gf/v2/util/gconv"
 )
 
+type ChangeEvent = storage.ChangeEvent
+
 type Client struct {
 	client      agollo.Client
 	config      *Config
 	mapping     *gmap.StrAnyMap
 	initialized bool
-	onChangeFn  func(event *storage.ChangeEvent)
+	onChangeFn  func(event *ChangeEvent)
 }
 
 func NewClient(config *Config) (*Client, error) {
