@@ -48,11 +48,7 @@ func LoadConfig(ctx context.Context, pointer interface{}, fileName string, def .
 		return err
 	}
 	configMap := loadDefMap(def...)
-	for key, value := range configFileMap {
-		if !gutil.MapContainsPossibleKey(configMap, key) {
-			configMap[key] = value // fill config map with config file map
-		}
-	}
+	mapFill(configMap, configFileMap)
 	return gvar.New(configMap).Struct(pointer)
 }
 
@@ -80,11 +76,7 @@ func loadDefMap(def ...map[string]interface{}) map[string]interface{} {
 	})
 	if len(def) > 0 && len(def[0]) > 0 {
 		defMap := mapOmitNil(gutil.MapCopy(def[0]))
-		for key, value := range cmdMap {
-			if !gutil.MapContainsPossibleKey(defMap, key) {
-				defMap[key] = value // fill def map with cmd/env map
-			}
-		}
+		mapFill(defMap, cmdMap)
 		return defMap
 	}
 	return cmdMap
@@ -100,4 +92,12 @@ func mapOmitNil(data map[string]interface{}) map[string]interface{} {
 		}
 	}
 	return data
+}
+
+func mapFill(dst map[string]interface{}, src map[string]interface{}) {
+	for key, value := range src {
+		if !gutil.MapContainsPossibleKey(dst, key) {
+			dst[key] = value // fill dst map with src map
+		}
+	}
 }

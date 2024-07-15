@@ -41,23 +41,17 @@ func NewClient(config *Config) (*Client, error) {
 }
 
 func (c *Client) Contains(key string) bool {
-	if !c.initialized {
-		c.updateLocalMapping()
-	}
+	c.initialize()
 	return c.mapping.Contains(key)
 }
 
 func (c *Client) Get(key string) interface{} {
-	if !c.initialized {
-		c.updateLocalMapping()
-	}
+	c.initialize()
 	return c.mapping.Get(key)
 }
 
 func (c *Client) Map() map[string]interface{} {
-	if !c.initialized {
-		c.updateLocalMapping()
-	}
+	c.initialize()
 	return c.mapping.Map()
 }
 
@@ -75,6 +69,12 @@ func (c *Client) OnChange(event *storage.ChangeEvent) {
 
 func (c *Client) OnNewestChange(_ *storage.FullChangeEvent) {
 	// Nothing to do.
+}
+
+func (c *Client) initialize() {
+	if !c.initialized {
+		c.updateLocalMapping()
+	}
 }
 
 func (c *Client) updateLocalMapping() {
