@@ -2,13 +2,14 @@ package agollox
 
 import (
 	"fmt"
+	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 )
 
-func MockServer(appConfig *Config, configMap map[string]map[string]string) *httptest.Server {
+func MockServer(appConfig *Config, configMap map[string]*gmap.StrStrMap) *httptest.Server {
 	uriHandlerMap := make(map[string]http.HandlerFunc, 0)
 	notifications := make([]map[string]interface{}, 0)
 	for namespace, keyValueMap := range configMap {

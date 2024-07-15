@@ -3,6 +3,7 @@ package agollox_test
 import (
 	"context"
 	"github.com/CharLemAznable/gfx/ext/agollox"
+	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/genv"
 	"github.com/gogf/gf/v2/test/gtest"
@@ -19,8 +20,8 @@ func Test_Default(t *testing.T) {
 		_ = genv.Set("GF_APOLLO_APPID", "test")
 		defer func() { _ = genv.Remove("GF_APOLLO_APPID") }()
 
-		mockData := map[string]map[string]string{
-			"application": {"key": "value"},
+		mockData := map[string]*gmap.StrStrMap{
+			"application": gmap.NewStrStrMapFrom(map[string]string{"key": "value"}, true),
 		}
 		mockConfig := agollox.DefaultConfig()
 		mockConfig.AppID = "test"
@@ -45,11 +46,11 @@ func Test_Default(t *testing.T) {
 		t.Assert("value", client.Get("key"))
 		t.Assert("value", client.Map()["key"])
 
-		client.SetOnChangeFn(func(event *agollox.ChangeEvent) {
+		client.SetChangeListener(agollox.ChangeListenerFunc(func(event *agollox.ChangeEvent) {
 			_, ok := event.Changes["key"]
 			t.Assert(true, ok)
-		})
-		mockData["application"]["key"] = "new value"
+		}))
+		mockData["application"].Set("key", "new value")
 		time.Sleep(time.Second * 3)
 		t.Assert("new value", client.Get("key"))
 	})

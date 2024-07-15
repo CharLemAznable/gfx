@@ -4,18 +4,18 @@ import (
 	"github.com/apolloconfig/agollo/v4"
 	"github.com/apolloconfig/agollo/v4/storage"
 	"github.com/gogf/gf/v2/container/gmap"
+	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/util/gconv"
+	"sync/atomic"
 )
-
-type ChangeEvent = storage.ChangeEvent
 
 type Client struct {
 	client      agollo.Client
 	config      *Config
 	mapping     *gmap.StrAnyMap
-	initialized bool
-	onChangeFn  func(event *ChangeEvent)
+	initialized atomic.Bool
+	listener    *gvar.Var
 }
 
 func NewClient(config *Config) (*Client, error) {
@@ -32,9 +32,10 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, gerror.Wrapf(err, `create agollo client failed with config: %+v`, config)
 	}
 	client := &Client{
-		client:  agolloClient,
-		config:  config,
-		mapping: gmap.NewStrAnyMap(true),
+		client:   agolloClient,
+		config:   config,
+		mapping:  gmap.NewStrAnyMap(true),
+		listener: gvar.New(nil, true),
 	}
 	client.client.AddChangeListener(client)
 	return client, nil
@@ -55,15 +56,15 @@ func (c *Client) Map() map[string]interface{} {
 	return c.mapping.Map()
 }
 
-func (c *Client) SetOnChangeFn(fn func(event *storage.ChangeEvent)) *Client {
-	c.onChangeFn = fn
+func (c *Client) SetChangeListener(listener ChangeListener) *Client {
+	c.listener.Set(listener)
 	return c
 }
 
 func (c *Client) OnChange(event *storage.ChangeEvent) {
 	c.updateLocalMapping()
-	if c.onChangeFn != nil {
-		c.onChangeFn(event)
+	if listener, ok := c.listener.Val().(ChangeListener); ok && listener != nil {
+		go listener.OnChange(event)
 	}
 }
 
@@ -72,17 +73,16 @@ func (c *Client) OnNewestChange(_ *storage.FullChangeEvent) {
 }
 
 func (c *Client) initialize() {
-	if !c.initialized {
+	if !c.initialized.Load() {
 		c.updateLocalMapping()
 	}
 }
 
 func (c *Client) updateLocalMapping() {
 	cache := c.client.GetConfigCache(c.config.NamespaceName)
-	defer cache.Clear()
 	cache.Range(func(key, value interface{}) bool {
 		c.mapping.Set(gconv.String(key), value)
 		return true
 	})
-	c.initialized = true
+	c.initialized.Store(true)
 }

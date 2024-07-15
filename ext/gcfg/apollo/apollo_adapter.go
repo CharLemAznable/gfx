@@ -43,7 +43,7 @@ func NewAdapterApollo(ctx context.Context, config *Config) (adapter gcfg.Adapter
 		config: config,
 		value:  gvar.New(nil, true),
 	}
-	agolloClient.SetOnChangeFn(client.onChange)
+	agolloClient.SetChangeListener(client)
 	return client, nil
 }
 
@@ -69,7 +69,7 @@ func (c *AdapterApollo) Data(_ context.Context) (data map[string]interface{}, er
 	return c.value.Val().(*gjson.Json).Map(), nil
 }
 
-func (c *AdapterApollo) onChange(event *agollox.ChangeEvent) {
+func (c *AdapterApollo) OnChange(event *agollox.ChangeEvent) {
 	if _, ok := event.Changes[c.config.Key]; !ok {
 		return
 	}
