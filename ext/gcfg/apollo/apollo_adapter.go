@@ -48,7 +48,7 @@ func NewAdapterApollo(ctx context.Context, config *Config) (adapter gcfg.Adapter
 }
 
 func (c *AdapterApollo) Available(_ context.Context, _ ...string) bool {
-	return c.client.Available()
+	return c.client.Contains(c.config.Key)
 }
 
 func (c *AdapterApollo) Get(_ context.Context, pattern string) (value interface{}, err error) {

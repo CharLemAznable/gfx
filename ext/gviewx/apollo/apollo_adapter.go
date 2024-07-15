@@ -5,6 +5,7 @@ import (
 	"github.com/CharLemAznable/gfx/ext/agollox"
 	"github.com/CharLemAznable/gfx/os/gviewx"
 	"github.com/gogf/gf/v2/container/gvar"
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/util/gvalid"
 )
 
@@ -38,5 +39,8 @@ func NewAdapterApollo(ctx context.Context, config *Config) (adapter gviewx.Adapt
 }
 
 func (c *AdapterApollo) GetContent(key string) (content string, err error) {
+	if !c.client.Contains(key) {
+		return "", gerror.Wrapf(err, `get content failed with apollo key: %s`, key)
+	}
 	return gvar.New(c.client.Get(key)).String(), nil
 }

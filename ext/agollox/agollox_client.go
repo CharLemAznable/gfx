@@ -40,8 +40,11 @@ func NewClient(config *Config) (*Client, error) {
 	return client, nil
 }
 
-func (c *Client) Available() bool {
-	return c.client.GetConfig(c.config.NamespaceName) != nil
+func (c *Client) Contains(key string) bool {
+	if !c.initialized {
+		c.updateLocalMapping()
+	}
+	return c.mapping.Contains(key)
 }
 
 func (c *Client) Get(key string) interface{} {
