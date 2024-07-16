@@ -6,6 +6,7 @@ import (
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gcfg"
+	"github.com/gogf/gf/v2/os/gmutex"
 	"github.com/gogf/gf/v2/util/gvalid"
 )
 
@@ -13,6 +14,7 @@ type AdapterApollo struct {
 	client *agollox.Client
 	config *Config
 	value  *gvar.Var
+	mutex  *gmutex.Mutex
 }
 
 var (
@@ -42,8 +44,11 @@ func NewAdapterApollo(ctx context.Context, config *Config) (adapter gcfg.Adapter
 		client: agolloClient,
 		config: config,
 		value:  gvar.New(nil, true),
+		mutex:  &gmutex.Mutex{},
 	}
-	agolloClient.SetChangeListener(client)
+	if config.Watch {
+		agolloClient.SetChangeListener(client)
+	}
 	return client, nil
 }
 
@@ -52,37 +57,39 @@ func (c *AdapterApollo) Available(_ context.Context, _ ...string) bool {
 }
 
 func (c *AdapterApollo) Get(_ context.Context, pattern string) (value interface{}, err error) {
-	if c.value.IsNil() {
-		if err = c.updateLocalValue(); err != nil {
-			return nil, err
-		}
+	if err = c.updateLocalValue(false); err != nil {
+		return nil, err
 	}
 	return c.value.Val().(*gjson.Json).Get(pattern).Val(), nil
 }
 
 func (c *AdapterApollo) Data(_ context.Context) (data map[string]interface{}, err error) {
-	if c.value.IsNil() {
-		if err = c.updateLocalValue(); err != nil {
-			return nil, err
-		}
+	if err = c.updateLocalValue(false); err != nil {
+		return nil, err
 	}
 	return c.value.Val().(*gjson.Json).Map(), nil
 }
 
 func (c *AdapterApollo) OnChange(event *agollox.ChangeEvent) {
-	if _, ok := event.Changes[c.config.Key]; !ok {
-		return
+	if _, ok := event.Changes[c.config.Key]; ok {
+		_ = c.updateLocalValue(true)
 	}
-	_ = c.updateLocalValue()
 }
 
-func (c *AdapterApollo) updateLocalValue() error {
-	value := c.client.Get(c.config.Key)
-	json, err := gjson.LoadContent(value, true)
-	if err != nil {
-		c.value.Set(gjson.New(nil))
-		return err
+func (c *AdapterApollo) updateLocalValue(anyway bool) (err error) {
+	if !(c.value.IsNil() || anyway) {
+		return
 	}
-	c.value.Set(json)
-	return nil
+	c.mutex.LockFunc(func() {
+		if !(c.value.IsNil() || anyway) {
+			return
+		}
+		var (
+			value = c.client.Get(c.config.Key)
+			json  = gjson.New(nil)
+		)
+		json, err = gjson.LoadContent(value, true)
+		c.value.Set(json)
+	})
+	return
 }

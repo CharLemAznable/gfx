@@ -10,6 +10,12 @@ cd ./ext/agollox
 go get -t ./...
 cd ./../..
 
+# gfx/ext/gcfg/apollo
+echo ">>>>>>>> get package: gfx/ext/gcfg/apollo"
+cd ./ext/gcfg/apollo
+go get -t ./...
+cd ./../../..
+
 # gfx/ext/gviewx/apollo
 echo ">>>>>>>> get package: gfx/ext/gviewx/apollo"
 cd ./ext/gviewx/apollo

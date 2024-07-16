@@ -10,6 +10,12 @@ cd ./ext/agollox
 go test -v ./... -race -test.bench=.* -coverprofile=coverage.txt -covermode=atomic
 cd ./../..
 
+# gfx/ext/gcfg/apollo
+echo ">>>>>>>> test package: gfx/ext/gcfg/apollo"
+cd ./ext/gcfg/apollo
+go test -v ./... -race -test.bench=.* -coverprofile=coverage.txt -covermode=atomic
+cd ./../../..
+
 # gfx/ext/gviewx/apollo
 echo ">>>>>>>> test package: gfx/ext/gviewx/apollo"
 cd ./ext/gviewx/apollo

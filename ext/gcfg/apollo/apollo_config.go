@@ -8,11 +8,14 @@ import (
 
 type Config struct {
 	agollox.Config
-	Key string `json:"key"`
+	Key   string `json:"key"`
+	Watch bool   `json:"watch"`
 }
 
 const (
 	defaultConfigFileName = "apollo"
+
+	defaultKey = "config"
 
 	apolloAppIdPattern     = "gf.gcfg.apollo.appid"
 	apolloClusterPattern   = "gf.gcfg.apollo.cluster"
@@ -26,7 +29,7 @@ func LoadConfig(ctx context.Context, fileName ...string) (*Config, error) {
 	if len(fileName) > 0 && fileName[0] != "" {
 		configFileName = fileName[0]
 	}
-	apolloConfig := &Config{Config: *agollox.DefaultConfig()}
+	apolloConfig := &Config{Config: *agollox.DefaultConfig(), Key: defaultKey, Watch: true}
 	err := agollox.LoadConfig(ctx, apolloConfig, configFileName, map[string]interface{}{
 		agollox.ConfigAppIdKey:     gcmd.GetOptWithEnv(apolloAppIdPattern).Val(),
 		agollox.ConfigClusterKey:   gcmd.GetOptWithEnv(apolloClusterPattern).Val(),
