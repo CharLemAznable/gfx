@@ -2,10 +2,11 @@ package agollox_test
 
 import (
 	"context"
+	"fmt"
 	"github.com/CharLemAznable/gfx/ext/agollox"
-	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/genv"
+	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/test/gtest"
 	"testing"
 	"time"
@@ -20,13 +21,14 @@ func Test_Default(t *testing.T) {
 		_ = genv.Set("GF_APOLLO_APPID", "test")
 		defer func() { _ = genv.Remove("GF_APOLLO_APPID") }()
 
-		mockData := map[string]*gmap.StrStrMap{
-			"application": gmap.NewStrStrMapFrom(map[string]string{"key": "value"}, true),
-		}
+		mockFileName := "testdata/mockdata.def.yaml"
+		_ = gfile.PutContents(mockFileName, `application:
+  key: "value"`)
+
 		mockConfig := agollox.DefaultConfig()
 		mockConfig.AppID = "test"
-		mockServer := agollox.MockServer(mockConfig, mockData)
-		mockIP := mockServer.URL
+		mockServer, _ := agollox.MockServer(mockConfig, mockFileName)
+		mockIP := fmt.Sprintf(`http://127.0.0.1:%d`, mockServer.GetListenedPort())
 
 		config := agollox.DefaultConfig()
 		config.Cluster = ""
@@ -50,7 +52,8 @@ func Test_Default(t *testing.T) {
 			_, ok := event.Changes["key"]
 			t.Assert(true, ok)
 		}))
-		mockData["application"].Set("key", "new value")
+		_ = gfile.PutContents(mockFileName, `application:
+  key: "new value"`)
 		time.Sleep(time.Second * 3)
 		t.Assert("new value", client.Get("key"))
 	})
@@ -62,6 +65,18 @@ func Test_Error(t *testing.T) {
 		config.MustStart = true
 		_ = agollox.LoadConfig(ctx, config, "testdata/config.none")
 		_, err := agollox.NewClient(config)
+		t.AssertNE(err, nil)
+
+		err = agollox.LoadConfig(ctx, config, "testdata/config.error")
+		t.AssertNE(err, nil)
+	})
+	gtest.C(t, func(t *gtest.T) {
+		_ = genv.Set("GF_GCFG_PATH", "errorpath")
+		defer func() { _ = genv.Remove("GF_GCFG_PATH") }()
+		config := agollox.DefaultConfig()
+		err := agollox.LoadConfig(ctx, config, "errorconfig")
+		t.AssertNE(err, nil)
+		_, err = agollox.MockServer(config, "errormock")
 		t.AssertNE(err, nil)
 	})
 }

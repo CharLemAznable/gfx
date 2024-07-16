@@ -6,16 +6,16 @@ import (
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/os/gmutex"
 	"github.com/gogf/gf/v2/util/gconv"
-	"sync/atomic"
 )
 
 type Client struct {
-	client      agollo.Client
-	config      *Config
-	mapping     *gmap.StrAnyMap
-	initialized atomic.Bool
-	listener    *gvar.Var
+	client   agollo.Client
+	config   *Config
+	mapValue *gvar.Var
+	mapMutex *gmutex.Mutex
+	listener *gvar.Var
 }
 
 func NewClient(config *Config) (*Client, error) {
@@ -34,7 +34,8 @@ func NewClient(config *Config) (*Client, error) {
 	client := &Client{
 		client:   agolloClient,
 		config:   config,
-		mapping:  gmap.NewStrAnyMap(true),
+		mapValue: gvar.New(nil, true),
+		mapMutex: &gmutex.Mutex{},
 		listener: gvar.New(nil, true),
 	}
 	client.client.AddChangeListener(client)
@@ -42,18 +43,18 @@ func NewClient(config *Config) (*Client, error) {
 }
 
 func (c *Client) Contains(key string) bool {
-	c.initialize()
-	return c.mapping.Contains(key)
+	c.updateLocalMapping(false)
+	return c.mapValue.Val().(*gmap.StrAnyMap).Contains(key)
 }
 
 func (c *Client) Get(key string) interface{} {
-	c.initialize()
-	return c.mapping.Get(key)
+	c.updateLocalMapping(false)
+	return c.mapValue.Val().(*gmap.StrAnyMap).Get(key)
 }
 
 func (c *Client) Map() map[string]interface{} {
-	c.initialize()
-	return c.mapping.Map()
+	c.updateLocalMapping(false)
+	return c.mapValue.Val().(*gmap.StrAnyMap).Map()
 }
 
 func (c *Client) SetChangeListener(listener ChangeListener) *Client {
@@ -62,7 +63,7 @@ func (c *Client) SetChangeListener(listener ChangeListener) *Client {
 }
 
 func (c *Client) OnChange(event *storage.ChangeEvent) {
-	c.updateLocalMapping()
+	c.updateLocalMapping(true)
 	if listener, ok := c.listener.Val().(ChangeListener); ok && listener != nil {
 		go listener.OnChange(event)
 	}
@@ -72,17 +73,20 @@ func (c *Client) OnNewestChange(_ *storage.FullChangeEvent) {
 	// Nothing to do.
 }
 
-func (c *Client) initialize() {
-	if !c.initialized.Load() {
-		c.updateLocalMapping()
+func (c *Client) updateLocalMapping(anyway bool) {
+	if !(c.mapValue.IsNil() || anyway) {
+		return
 	}
-}
-
-func (c *Client) updateLocalMapping() {
-	cache := c.client.GetConfigCache(c.config.NamespaceName)
-	cache.Range(func(key, value interface{}) bool {
-		c.mapping.Set(gconv.String(key), value)
-		return true
+	c.mapMutex.LockFunc(func() {
+		if !(c.mapValue.IsNil() || anyway) {
+			return
+		}
+		m := gmap.NewStrAnyMap(true)
+		cache := c.client.GetConfigCache(c.config.NamespaceName)
+		cache.Range(func(key, value interface{}) bool {
+			m.Set(gconv.String(key), value)
+			return true
+		})
+		c.mapValue.Set(m)
 	})
-	c.initialized.Store(true)
 }

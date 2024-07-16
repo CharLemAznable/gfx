@@ -1,53 +1,49 @@
 package agollox
 
 import (
+	"context"
 	"fmt"
-	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"net/http"
-	"net/http/httptest"
-	"strings"
+	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/os/gcfg"
+	"github.com/gogf/gf/v2/util/guid"
 )
 
-func MockServer(appConfig *Config, configMap map[string]*gmap.StrStrMap) *httptest.Server {
-	uriHandlerMap := make(map[string]http.HandlerFunc, 0)
-	notifications := make([]map[string]interface{}, 0)
-	for namespace, keyValueMap := range configMap {
-		uriHandlerMap[fmt.Sprintf("/configfiles/json/%s/%s/%s",
-			appConfig.AppID, appConfig.Cluster, namespace)] =
-			func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				_, _ = fmt.Fprintf(w, gjson.New(keyValueMap).MustToJsonString())
-			}
-		uriHandlerMap[fmt.Sprintf("/configs/%s/%s/%s",
-			appConfig.AppID, appConfig.Cluster, namespace)] =
-			func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				m := map[string]interface{}{
-					"appId":          appConfig.AppID,
-					"cluster":        appConfig.Cluster,
-					"namespaceName":  namespace,
-					"configurations": keyValueMap,
-					"releaseKey":     "",
-				}
-				_, _ = fmt.Fprintf(w, gjson.New(m).MustToJsonString())
-			}
-		notifications = append(notifications, map[string]interface{}{
+func MockServer(appConfig *Config, mockFileName string) (*ghttp.Server, error) {
+	mockFile, err := gcfg.NewAdapterFile(mockFileName)
+	if err != nil {
+		return nil, err
+	}
+	server := ghttp.GetServer(guid.S())
+	server.SetDumpRouterMap(false)
+	server.BindHandler(fmt.Sprintf("/configfiles/json/%s/%s/:namespace",
+		appConfig.AppID, appConfig.Cluster), func(r *ghttp.Request) {
+		value, _ := mockFile.Get(context.Background(), r.GetRouter("namespace").String())
+		r.Response.WriteJson(gjson.New(value).MustToJsonString())
+	})
+	server.BindHandler(fmt.Sprintf("/configs/%s/%s/:namespace",
+		appConfig.AppID, appConfig.Cluster), func(r *ghttp.Request) {
+		namespace := r.GetRouter("namespace").String()
+		value, _ := mockFile.Get(context.Background(), namespace)
+		r.Response.WriteJson(map[string]interface{}{
+			"appId":          appConfig.AppID,
+			"cluster":        appConfig.Cluster,
 			"namespaceName":  namespace,
-			"notificationId": 3,
+			"configurations": gjson.New(value),
+			"releaseKey":     "",
 		})
-	}
-	uriHandlerMap["/notifications/v2"] = func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = fmt.Fprintf(w, gjson.New(notifications).MustToJsonString())
-	}
-
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		for path, handler := range uriHandlerMap {
-			if strings.HasPrefix(r.RequestURI, path) {
-				handler(w, r)
-				break
-			}
+	})
+	server.BindHandler("/notifications/v2", func(r *ghttp.Request) {
+		mockDataMap, _ := mockFile.Data(context.Background())
+		notifications := make([]map[string]interface{}, 0)
+		for namespace := range mockDataMap {
+			notifications = append(notifications, map[string]interface{}{
+				"namespaceName":  namespace,
+				"notificationId": 2,
+			})
 		}
-	}))
+		r.Response.WriteJson(notifications)
+	})
+	err = server.Start()
+	return server, err
 }
