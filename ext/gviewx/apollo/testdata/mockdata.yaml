@@ -1,0 +1,2 @@
+application:
+  tmpl: "Hello, {{.Name}}!"

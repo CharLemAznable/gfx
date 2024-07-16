@@ -44,18 +44,18 @@ func Test_Default(t *testing.T) {
 
 		client, err := agollox.NewClient(config)
 		t.AssertNil(err)
-		t.Assert(true, client.Contains("key"))
-		t.Assert("value", client.Get("key"))
-		t.Assert("value", client.Map()["key"])
+		t.Assert(client.Contains("key"), true)
+		t.Assert(client.Get("key"), "value")
+		t.Assert(client.Map()["key"], "value")
 
 		client.SetChangeListener(agollox.ChangeListenerFunc(func(event *agollox.ChangeEvent) {
 			_, ok := event.Changes["key"]
-			t.Assert(true, ok)
+			t.Assert(ok, true)
 		}))
 		_ = gfile.PutContents(mockFileName, `application:
   key: "new value"`)
 		time.Sleep(time.Second * 3)
-		t.Assert("new value", client.Get("key"))
+		t.Assert(client.Get("key"), "new value")
 	})
 }
 

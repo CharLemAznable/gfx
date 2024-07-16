@@ -7,3 +7,4 @@ backupConfigPath: ""
 secret: ""
 label: ""
 syncServerTimeout: 0
+mustStart: true
