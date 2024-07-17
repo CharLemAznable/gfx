@@ -63,12 +63,12 @@ func Test_Error(t *testing.T) {
 		adapter, err := apollo.LoadAdapter(ctx, "testdata/apollo_error")
 		t.AssertNil(adapter)
 		t.AssertNE(err, nil)
-		t.Assert(err.Error(), "Apollo IP field is required")
+		t.Assert(err.Error(), "gviewx: Apollo IP field is required")
 
 		adapter, err = apollo.LoadAdapter(ctx, "testdata/apollo_none")
 		t.AssertNil(adapter)
 		t.AssertNE(err, nil)
-		t.Assert(err.Error(), "Apollo IP field is required")
+		t.Assert(err.Error(), "gviewx: Apollo IP field is required")
 	})
 	gtest.C(t, func(t *gtest.T) {
 		adapter, err := apollo.LoadAdapter(ctx, "testdata/apollo_local")
