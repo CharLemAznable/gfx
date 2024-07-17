@@ -3,7 +3,6 @@ package apollo
 import (
 	"context"
 	"github.com/CharLemAznable/gfx/ext/agollox"
-	"github.com/CharLemAznable/gfx/os/gviewx"
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/errors/gcode"
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -26,17 +25,18 @@ var (
 	}
 )
 
-func NewAdapterApollo(ctx context.Context, config *Config) (adapter gviewx.Adapter, err error) {
+func NewAdapterApollo(ctx context.Context, config *Config) (adapter *AdapterApollo, err error) {
 	// Data validation.
 	err = gvalid.New().Rules(configRules).Messages(configMessage).Data(config).Run(ctx)
 	if err != nil {
-		return nil, err
+		return
 	}
 	agolloClient, err := agollox.NewClient(config)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return &AdapterApollo{client: agolloClient, config: config}, nil
+	adapter = &AdapterApollo{client: agolloClient, config: config}
+	return
 }
 
 func (c *AdapterApollo) GetContent(key string) (string, error) {

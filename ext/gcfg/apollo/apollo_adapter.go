@@ -5,7 +5,6 @@ import (
 	"github.com/CharLemAznable/gfx/ext/agollox"
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/os/gmutex"
 	"github.com/gogf/gf/v2/util/gvalid"
 )
@@ -30,26 +29,26 @@ var (
 	}
 )
 
-func NewAdapterApollo(ctx context.Context, config *Config) (adapter gcfg.Adapter, err error) {
+func NewAdapterApollo(ctx context.Context, config *Config) (adapter *AdapterApollo, err error) {
 	// Data validation.
 	err = gvalid.New().Rules(configRules).Messages(configMessage).Data(config).Run(ctx)
 	if err != nil {
-		return nil, err
+		return
 	}
 	agolloClient, err := agollox.NewClient(&config.Config)
 	if err != nil {
-		return nil, err
+		return
 	}
-	client := &AdapterApollo{
+	adapter = &AdapterApollo{
 		client: agolloClient,
 		config: config,
 		value:  gvar.New(nil, true),
 		mutex:  &gmutex.Mutex{},
 	}
 	if config.Watch {
-		agolloClient.SetChangeListener(client)
+		agolloClient.SetChangeListener(adapter)
 	}
-	return client, nil
+	return
 }
 
 func (c *AdapterApollo) Available(_ context.Context, _ ...string) bool {
