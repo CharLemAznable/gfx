@@ -57,14 +57,14 @@ func (c *AdapterApollo) Available(_ context.Context, _ ...string) bool {
 }
 
 func (c *AdapterApollo) Get(_ context.Context, pattern string) (value interface{}, err error) {
-	if err = c.updateLocalValue(false); err != nil {
+	if err = c.updateLocalValue(true); err != nil {
 		return nil, err
 	}
 	return c.value.Val().(*gjson.Json).Get(pattern).Val(), nil
 }
 
 func (c *AdapterApollo) Data(_ context.Context) (data map[string]interface{}, err error) {
-	if err = c.updateLocalValue(false); err != nil {
+	if err = c.updateLocalValue(true); err != nil {
 		return nil, err
 	}
 	return c.value.Val().(*gjson.Json).Map(), nil
@@ -72,16 +72,16 @@ func (c *AdapterApollo) Data(_ context.Context) (data map[string]interface{}, er
 
 func (c *AdapterApollo) OnChange(event *agollox.ChangeEvent) {
 	if _, ok := event.Changes[c.config.Key]; ok {
-		_ = c.updateLocalValue(true)
+		_ = c.updateLocalValue(false)
 	}
 }
 
-func (c *AdapterApollo) updateLocalValue(anyway bool) (err error) {
-	if !(c.value.IsNil() || anyway) {
+func (c *AdapterApollo) updateLocalValue(onlyIfValueIsNil bool) (err error) {
+	if !c.value.IsNil() && onlyIfValueIsNil {
 		return
 	}
 	c.mutex.LockFunc(func() {
-		if !(c.value.IsNil() || anyway) {
+		if !c.value.IsNil() && onlyIfValueIsNil {
 			return
 		}
 		var (

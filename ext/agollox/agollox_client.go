@@ -43,17 +43,17 @@ func NewClient(config *Config) (*Client, error) {
 }
 
 func (c *Client) Contains(key string) bool {
-	c.updateLocalMapping(false)
+	c.updateLocalMapping(true)
 	return c.mapValue.Val().(*gmap.StrAnyMap).Contains(key)
 }
 
 func (c *Client) Get(key string) interface{} {
-	c.updateLocalMapping(false)
+	c.updateLocalMapping(true)
 	return c.mapValue.Val().(*gmap.StrAnyMap).Get(key)
 }
 
 func (c *Client) Map() map[string]interface{} {
-	c.updateLocalMapping(false)
+	c.updateLocalMapping(true)
 	return c.mapValue.Val().(*gmap.StrAnyMap).Map()
 }
 
@@ -63,7 +63,7 @@ func (c *Client) SetChangeListener(listener ChangeListener) *Client {
 }
 
 func (c *Client) OnChange(event *storage.ChangeEvent) {
-	c.updateLocalMapping(true)
+	c.updateLocalMapping(false)
 	if listener, ok := c.listener.Val().(ChangeListener); ok && listener != nil {
 		go listener.OnChange(event)
 	}
@@ -73,12 +73,12 @@ func (c *Client) OnNewestChange(_ *storage.FullChangeEvent) {
 	// Nothing to do.
 }
 
-func (c *Client) updateLocalMapping(anyway bool) {
-	if !(c.mapValue.IsNil() || anyway) {
+func (c *Client) updateLocalMapping(onlyIfValueIsNil bool) {
+	if !c.mapValue.IsNil() && onlyIfValueIsNil {
 		return
 	}
 	c.mapMutex.LockFunc(func() {
-		if !(c.mapValue.IsNil() || anyway) {
+		if !c.mapValue.IsNil() && onlyIfValueIsNil {
 			return
 		}
 		m := gmap.NewStrAnyMap(true)
