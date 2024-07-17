@@ -20,8 +20,8 @@ var (
 		"ip":    "required",
 	}
 	configMessage = map[string]interface{}{
-		"appId": "Apollo AppId field is required",
-		"ip":    "Apollo IP field is required",
+		"appId": "gviewx: Apollo AppId field is required",
+		"ip":    "gviewx: Apollo IP field is required",
 	}
 )
 

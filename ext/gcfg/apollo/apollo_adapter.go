@@ -23,9 +23,9 @@ var (
 		"key":   "required",
 	}
 	configMessage = map[string]interface{}{
-		"appId": "Apollo AppId field is required",
-		"ip":    "Apollo IP field is required",
-		"key":   "Apollo Key field is required",
+		"appId": "gcfg: Apollo AppId field is required",
+		"ip":    "gcfg: Apollo IP field is required",
+		"key":   "gcfg: Apollo Key field is required",
 	}
 )
 
