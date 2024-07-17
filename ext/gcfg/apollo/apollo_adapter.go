@@ -51,44 +51,44 @@ func NewAdapterApollo(ctx context.Context, config *Config) (adapter *AdapterApol
 	return
 }
 
-func (c *AdapterApollo) Available(_ context.Context, _ ...string) bool {
-	return c.client.Contains(c.config.Key)
+func (a *AdapterApollo) Available(_ context.Context, _ ...string) bool {
+	return a.client.Contains(a.config.Key)
 }
 
-func (c *AdapterApollo) Get(_ context.Context, pattern string) (value interface{}, err error) {
-	if err = c.updateLocalValue(true); err != nil {
+func (a *AdapterApollo) Get(_ context.Context, pattern string) (value interface{}, err error) {
+	if err = a.updateLocalValue(true); err != nil {
 		return nil, err
 	}
-	return c.value.Val().(*gjson.Json).Get(pattern).Val(), nil
+	return a.value.Val().(*gjson.Json).Get(pattern).Val(), nil
 }
 
-func (c *AdapterApollo) Data(_ context.Context) (data map[string]interface{}, err error) {
-	if err = c.updateLocalValue(true); err != nil {
+func (a *AdapterApollo) Data(_ context.Context) (data map[string]interface{}, err error) {
+	if err = a.updateLocalValue(true); err != nil {
 		return nil, err
 	}
-	return c.value.Val().(*gjson.Json).Map(), nil
+	return a.value.Val().(*gjson.Json).Map(), nil
 }
 
-func (c *AdapterApollo) OnChange(event *agollox.ChangeEvent) {
-	if _, ok := event.Changes[c.config.Key]; ok {
-		_ = c.updateLocalValue(false)
+func (a *AdapterApollo) OnChange(event *agollox.ChangeEvent) {
+	if _, ok := event.Changes[a.config.Key]; ok {
+		_ = a.updateLocalValue(false)
 	}
 }
 
-func (c *AdapterApollo) updateLocalValue(onlyIfValueIsNil bool) (err error) {
-	if !c.value.IsNil() && onlyIfValueIsNil {
+func (a *AdapterApollo) updateLocalValue(onlyIfValueIsNil bool) (err error) {
+	if !a.value.IsNil() && onlyIfValueIsNil {
 		return
 	}
-	c.mutex.LockFunc(func() {
-		if !c.value.IsNil() && onlyIfValueIsNil {
+	a.mutex.LockFunc(func() {
+		if !a.value.IsNil() && onlyIfValueIsNil {
 			return
 		}
 		var (
-			value = c.client.Get(c.config.Key)
+			value = a.client.Get(a.config.Key)
 			json  = gjson.New(nil)
 		)
 		json, err = gjson.LoadContent(value, true)
-		c.value.Set(json)
+		a.value.Set(json)
 	})
 	return
 }

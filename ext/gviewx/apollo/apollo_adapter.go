@@ -39,9 +39,9 @@ func NewAdapterApollo(ctx context.Context, config *Config) (adapter *AdapterApol
 	return
 }
 
-func (c *AdapterApollo) GetContent(key string) (string, error) {
-	if !c.client.Contains(key) {
+func (a *AdapterApollo) GetContent(key string) (string, error) {
+	if !a.client.Contains(key) {
 		return "", gerror.NewCodef(gcode.CodeInvalidParameter, `get content failed with apollo key: %s`, key)
 	}
-	return gvar.New(c.client.Get(key)).String(), nil
+	return gvar.New(a.client.Get(key)).String(), nil
 }
