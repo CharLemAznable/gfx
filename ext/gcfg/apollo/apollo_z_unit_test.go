@@ -45,6 +45,23 @@ backupConfigPath: ".apollo.bk"`)
 		t.Assert(cfgMap["server"].(map[string]interface{})["address"], ":8081")
 		t.AssertNil(err)
 
+		_ = gfile.PutContents("testdata/apollo.yaml", `appId: "test"
+ip: "`+mockIP+`"
+backupConfigPath: ".apollo.bk"
+key: "notfound"`)
+
+		adapter, err = apollo.LoadAdapter(ctx, "testdata/apollo")
+		t.AssertNE(adapter, nil)
+		t.AssertNil(err)
+		t.Assert(adapter.Available(ctx), false)
+
+		cfgVal, err = adapter.Get(ctx, "server.address")
+		t.AssertNil(cfgVal)
+		t.AssertNil(err)
+		cfgMap, err = adapter.Data(ctx)
+		t.AssertNil(cfgMap)
+		t.AssertNil(err)
+
 		_ = gfile.PutContents("testdata/apollo.yaml", "")
 		_ = gfile.PutContents("testdata/mockdata.yaml", "")
 	})
