@@ -1,6 +1,7 @@
 package agollox
 
 import (
+	"context"
 	"github.com/apolloconfig/agollo/v4"
 	"github.com/apolloconfig/agollo/v4/storage"
 	"github.com/gogf/gf/v2/container/gmap"
@@ -8,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gmutex"
 	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/gogf/gf/v2/util/gvalid"
 )
 
 type Client struct {
@@ -18,13 +20,30 @@ type Client struct {
 	listener *gvar.Var
 }
 
-func NewClient(config *Config) (*Client, error) {
+var (
+	configRules = map[string]string{
+		"appId": "required",
+		"ip":    "required",
+	}
+	configMessage = map[string]interface{}{
+		"appId": "Apollo AppId field is required",
+		"ip":    "Apollo IP field is required",
+	}
+)
+
+func NewClient(ctx context.Context, config *Config) (*Client, error) {
 	if config.Cluster == "" {
 		config.Cluster = defaultCluster
 	}
 	if config.NamespaceName == "" {
 		config.NamespaceName = defaultNamespace
 	}
+	if err := gvalid.New().
+		Rules(configRules).Messages(configMessage).
+		Data(config).Run(ctx); err != nil {
+		return nil, err
+	}
+
 	agolloClient, err := agollo.StartWithConfig(func() (*Config, error) {
 		return config, nil
 	})

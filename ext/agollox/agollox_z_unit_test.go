@@ -42,7 +42,7 @@ func Test_Default(t *testing.T) {
 		})
 		t.AssertNil(err)
 
-		client, err := agollox.NewClient(config)
+		client, err := agollox.NewClient(ctx, config)
 		t.AssertNil(err)
 		t.Assert(client.Contains("key"), true)
 		t.Assert(client.Get("key"), "value")
@@ -62,12 +62,22 @@ func Test_Default(t *testing.T) {
 func Test_Error(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
 		config := agollox.DefaultConfig()
-		config.MustStart = true
+		config.AppID = "test"
 		_ = agollox.LoadConfig(ctx, config, "testdata/config.none")
-		_, err := agollox.NewClient(config)
+		_, err := agollox.NewClient(ctx, config)
 		t.AssertNE(err, nil)
+		t.Assert(err.Error(), "Apollo IP field is required")
 
+		config = agollox.DefaultConfig()
 		err = agollox.LoadConfig(ctx, config, "testdata/config.error")
+		t.AssertNE(err, nil)
+	})
+	gtest.C(t, func(t *gtest.T) {
+		config := agollox.DefaultConfig()
+		config.AppID = "test"
+		config.MustStart = true
+		config.IP = "http://localhost:8888"
+		_, err := agollox.NewClient(ctx, config)
 		t.AssertNE(err, nil)
 	})
 	gtest.C(t, func(t *gtest.T) {

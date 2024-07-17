@@ -18,14 +18,10 @@ type AdapterApollo struct {
 
 var (
 	configRules = map[string]string{
-		"appId": "required",
-		"ip":    "required",
-		"key":   "required",
+		"key": "required",
 	}
 	configMessage = map[string]interface{}{
-		"appId": "gcfg: Apollo AppId field is required",
-		"ip":    "gcfg: Apollo IP field is required",
-		"key":   "gcfg: Apollo Key field is required",
+		"key": "Apollo Key field is required",
 	}
 )
 
@@ -35,7 +31,7 @@ func NewAdapterApollo(ctx context.Context, config *Config) (adapter *AdapterApol
 	if err != nil {
 		return
 	}
-	agolloClient, err := agollox.NewClient(&config.Config)
+	agolloClient, err := agollox.NewClient(ctx, &config.Config)
 	if err != nil {
 		return
 	}
