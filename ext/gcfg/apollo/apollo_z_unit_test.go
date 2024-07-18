@@ -24,6 +24,7 @@ func Test_Normal(t *testing.T) {
 		mockConfig := agollox.DefaultConfig()
 		mockConfig.AppID = "test"
 		mockServer, _ := agollox.MockServer(mockConfig, "testdata/mockdata")
+		defer func() { _ = mockServer.Shutdown() }()
 		mockIP := fmt.Sprintf(`http://127.0.0.1:%d`, mockServer.GetListenedPort())
 
 		_ = gfile.PutContents("testdata/apollo.yaml", `appId: "test"
@@ -75,6 +76,7 @@ func Test_Lazy(t *testing.T) {
 		mockConfig := agollox.DefaultConfig()
 		mockConfig.AppID = "test"
 		mockServer, _ := agollox.MockServer(mockConfig, "testdata/mockdata_lazy")
+		defer func() { _ = mockServer.Shutdown() }()
 		mockIP := fmt.Sprintf(`http://127.0.0.1:%d`, mockServer.GetListenedPort())
 
 		_ = gfile.PutContents("testdata/apollo_lazy.yaml", `appId: "test"

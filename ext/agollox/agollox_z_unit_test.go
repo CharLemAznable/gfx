@@ -28,6 +28,7 @@ func Test_Default(t *testing.T) {
 		mockConfig := agollox.DefaultConfig()
 		mockConfig.AppID = "test"
 		mockServer, _ := agollox.MockServer(mockConfig, mockFileName)
+		defer func() { _ = mockServer.Shutdown() }()
 		mockIP := fmt.Sprintf(`http://127.0.0.1:%d`, mockServer.GetListenedPort())
 
 		config := agollox.DefaultConfig()
