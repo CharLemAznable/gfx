@@ -7,10 +7,6 @@ func (c *Client) RequestBytesErr(ctx context.Context, method string, url string,
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err = response.Close(); err != nil && c.intlog != nil {
-			c.intlog.Errorf(ctx, `%+v`, err)
-		}
-	}()
+	defer c.deferCloseResponse(ctx, response)
 	return response.ReadAll(), nil
 }
