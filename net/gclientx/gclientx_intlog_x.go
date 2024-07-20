@@ -6,7 +6,11 @@ import (
 )
 
 func (c *Client) deferCloseResponse(ctx context.Context, response *gclient.Response) {
-	if err := response.Close(); err != nil && c.intlog != nil {
+	c.deferLogError(ctx, response.Close())
+}
+
+func (c *Client) deferLogError(ctx context.Context, err error) {
+	if err != nil && c.intlog != nil {
 		c.intlog.Errorf(ctx, `%+v`, err)
 	}
 }
