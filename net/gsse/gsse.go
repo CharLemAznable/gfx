@@ -57,6 +57,9 @@ func (c *Client) SendEventWithId(event, data, id string) {
 }
 
 func (c *Client) emit(event, data, id string) {
+	if c.Terminated() {
+		return
+	}
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	// event: not required
@@ -86,6 +89,9 @@ func (c *Client) heartbeat() {
 }
 
 func (c *Client) comment(comment string) {
+	if c.Terminated() {
+		return
+	}
 	c.Response().Writeln(":", comment)
 	c.Response().Writeln()
 	c.Response().Flush()

@@ -64,6 +64,7 @@ func (s *internalEventSource) Execute(ctx context.Context, listener ...EventList
 			return
 		}
 		scanner := bufio.NewScanner(response.Body)
+		defer s.close(scanner.Err())
 		for s.processNextEvent(ctx, scanner) {
 		}
 	}, s.client.deferLogError)
@@ -125,7 +126,6 @@ func (s *internalEventSource) processNextEvent(ctx context.Context, scanner *buf
 			}
 		}
 	}
-	s.close(scanner.Err())
 	return false
 }
 
