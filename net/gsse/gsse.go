@@ -57,11 +57,11 @@ func (c *Client) SendEventWithId(event, data, id string) {
 }
 
 func (c *Client) emit(event, data, id string) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	if c.Terminated() {
 		return
 	}
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
 	// event: not required
 	if event != NoEvent {
 		c.Response().Writeln("event:", event)

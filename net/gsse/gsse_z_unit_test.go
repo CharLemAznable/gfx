@@ -15,7 +15,7 @@ func Test_SendMessage(t *testing.T) {
 	s := g.Server(guid.S())
 	s.BindHandler("/sse", gsse.Handle(func(client *gsse.Client) {
 		client.SendMessage("send message")
-		client.SendComment("send message")
+		client.SendComment("send comment")
 	}))
 	s.SetDumpRouterMap(false)
 	_ = s.Start()
@@ -28,7 +28,7 @@ func Test_SendMessage(t *testing.T) {
 		client.SetPrefix(prefix)
 
 		t.Assert(client.GetContent(gctx.New(), "/sse"),
-			"data:send message\n\n:send message\n\n")
+			"data:send message\n\n:send comment\n\n")
 	})
 }
 
@@ -69,6 +69,7 @@ func Test_SendEvent(t *testing.T) {
 			<-time.After(time.Second)
 			client.SendEvent("test", "send event")
 			client.Close()
+			client.SendEvent("test", "send event")
 		}(client)
 	}))
 	s.SetDumpRouterMap(false)
@@ -94,6 +95,7 @@ func Test_SendEventWithId(t *testing.T) {
 			<-time.After(time.Second)
 			client.SendEventWithId("test", "send event", "2")
 			client.Close()
+			client.SendComment("send comment")
 		}(client)
 	}))
 	s.SetDumpRouterMap(false)
