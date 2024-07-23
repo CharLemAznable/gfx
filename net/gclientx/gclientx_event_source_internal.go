@@ -49,11 +49,8 @@ func (s *internalEventSource) Execute(ctx context.Context, listener ...EventList
 		})
 	}
 	return s, grpool.AddWithRecover(ctx, func(ctx context.Context) {
-		response, err := s.client.Client.Header(map[string]string{
-			"Accept":        "text/event-stream",
-			"Cache-Control": "no-cache",
-			"Connection":    "keep-alive",
-		}).DoRequest(ctx, s.method, s.url, s.data...)
+		response, err := s.client.Client.
+			DoRequest(ctx, s.method, s.url, s.data...)
 		if err != nil {
 			s.close(err)
 			return
