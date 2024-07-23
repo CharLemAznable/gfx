@@ -14,32 +14,23 @@ func Handle(fn func(*Client)) func(*ghttp.Request) {
 			fn(client)
 		}
 
-		var (
-			keepAliveCtx    context.Context
-			keepAliveCancel context.CancelFunc = func() {
-				// empty func if not keep alive
-			}
-		)
-		if client.keepAlive {
-			keepAliveCtx, keepAliveCancel =
-				context.WithCancel(context.Background())
+		if !client.keepAlive {
+			return
 		}
+
+		keepAliveCtx, keepAliveCancel :=
+			context.WithCancel(context.Background())
 		go func() {
 			<-client.Context().Done()
-			if client.onClose != nil {
-				go client.onClose(client)
-			}
 			keepAliveCancel()
 		}()
-		if client.keepAlive {
-			for {
-				select {
-				case <-keepAliveCtx.Done():
-					return
-				default:
-					client.heartbeat()
-					time.Sleep(5 * time.Second)
-				}
+		for {
+			select {
+			case <-keepAliveCtx.Done():
+				return
+			default:
+				client.heartbeat()
+				time.Sleep(5 * time.Second)
 			}
 		}
 	}

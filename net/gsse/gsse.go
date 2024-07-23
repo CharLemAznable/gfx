@@ -2,6 +2,7 @@ package gsse
 
 import (
 	"context"
+	"github.com/gogf/gf/v2/container/gtype"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gmutex"
 )
@@ -16,7 +17,7 @@ const (
 type Client struct {
 	request   *ghttp.Request
 	cancel    context.CancelFunc
-	onClose   func(*Client)
+	onClose   *gtype.Interface
 	keepAlive bool
 	mutex     *gmutex.Mutex
 }
@@ -59,20 +60,19 @@ func (c *Client) SendEventWithId(event, data, id string) {
 func (c *Client) emit(event, data, id string) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	if c.Terminated() {
-		return
+	select {
+	case <-c.Context().Done():
+	default:
+		if event != NoEvent { // event: not required
+			c.Response().Writeln("event:", event)
+		}
+		c.Response().Writeln("data:", data)
+		if id != NoId { // id: not required
+			c.Response().Writeln("id:", id)
+		}
+		c.Response().Writeln()
+		c.Response().Flush()
 	}
-	// event: not required
-	if event != NoEvent {
-		c.Response().Writeln("event:", event)
-	}
-	c.Response().Writeln("data:", data)
-	// id: not required
-	if id != NoId {
-		c.Response().Writeln("id:", id)
-	}
-	c.Response().Writeln()
-	c.Response().Flush()
 }
 
 // SendComment send comment with prefix":"
@@ -89,12 +89,13 @@ func (c *Client) heartbeat() {
 }
 
 func (c *Client) comment(comment string) {
-	if c.Terminated() {
-		return
+	select {
+	case <-c.Context().Done():
+	default:
+		c.Response().Writeln(":", comment)
+		c.Response().Writeln()
+		c.Response().Flush()
 	}
-	c.Response().Writeln(":", comment)
-	c.Response().Writeln()
-	c.Response().Flush()
 }
 
 // Close closes the connection
@@ -109,7 +110,7 @@ func (c *Client) Terminated() bool {
 
 // OnClose callback which runs when a client closes its connection
 func (c *Client) OnClose(fn func(*Client)) {
-	c.onClose = fn
+	c.onClose.Set(fn)
 }
 
 // KeepAlive keeps the connection alive, if you need to use the client outside the handler
@@ -123,11 +124,18 @@ func newClient(request *ghttp.Request) *Client {
 	request.Response.Header().Set("Content-Type", "text/event-stream")
 	request.Response.Header().Set("Cache-Control", "no-cache")
 	request.Response.Header().Set("Connection", "keep-alive")
-	return &Client{
+	client := &Client{
 		request:   request,
 		cancel:    cancel,
-		onClose:   nil,
+		onClose:   gtype.NewInterface(),
 		keepAlive: false,
 		mutex:     &gmutex.Mutex{},
 	}
+	go func() {
+		<-client.Context().Done()
+		if onClose := client.onClose.Val(); onClose != nil {
+			go onClose.(func(*Client))(client)
+		}
+	}()
+	return client
 }
