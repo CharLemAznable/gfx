@@ -1,7 +1,5 @@
 package gclientx
 
-import "context"
-
 type Event struct {
 	Id    string
 	Event string
@@ -19,7 +17,7 @@ func (f EventListenerFunc) OnEvent(event *Event, err error) {
 }
 
 type EventSource interface {
-	Execute(ctx context.Context, listener ...EventListener) (EventSource, error)
+	Execute(listener ...EventListener) (EventSource, error)
 	Event() <-chan *Event
 	Err() error
 }

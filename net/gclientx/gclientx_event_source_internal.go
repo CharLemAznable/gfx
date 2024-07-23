@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/os/grpool"
 	"net/http"
 	"strings"
+	"sync"
 )
 
 var (
@@ -26,6 +27,7 @@ type internalEventSource struct {
 	data    []interface{}
 	mutex   *gmutex.Mutex
 	eventCh *gtype.Interface // Event channel.
+	eventWg sync.WaitGroup
 	eventLn *gtype.Interface // Event listener.
 	err     error
 }
@@ -42,13 +44,13 @@ func newEventSource(client *Client, method string, url string, data ...interface
 	}
 }
 
-func (s *internalEventSource) Execute(ctx context.Context, listener ...EventListener) (EventSource, error) {
+func (s *internalEventSource) Execute(listener ...EventListener) (EventSource, error) {
 	if len(listener) > 0 && listener[0] != nil {
 		s.mutex.LockFunc(func() {
 			s.eventLn.Set(listener[0])
 		})
 	}
-	return s, grpool.AddWithRecover(ctx, func(ctx context.Context) {
+	return s, grpool.AddWithRecover(context.Background(), func(ctx context.Context) {
 		response, err := s.client.Client.
 			DoRequest(ctx, s.method, s.url, s.data...)
 		if err != nil {
@@ -93,7 +95,10 @@ func (s *internalEventSource) close(err error) {
 	s.mutex.LockFunc(func() {
 		s.err = err
 		if ch := s.eventCh.Val(); ch != nil {
-			close(ch.(chan *Event))
+			go func() {
+				s.eventWg.Wait()
+				close(ch.(chan *Event))
+			}()
 		} else {
 			s.eventCh.Set(closedEvent)
 		}
@@ -129,6 +134,8 @@ func (s *internalEventSource) processNextEvent(ctx context.Context, scanner *buf
 func (s *internalEventSource) completeEvent(ctx context.Context, event *Event) {
 	if ch := s.eventCh.Val(); ch != nil {
 		_ = grpool.AddWithRecover(ctx, func(ctx context.Context) {
+			s.eventWg.Add(1)
+			defer s.eventWg.Done()
 			ch.(chan *Event) <- event
 		}, s.client.deferLogError)
 	}
