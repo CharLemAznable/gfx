@@ -91,6 +91,12 @@ func (s *internalEventSource) Err() (err error) {
 	return
 }
 
+func (s *internalEventSource) Close() {
+	for range s.Event() {
+		// drain the event channel
+	}
+}
+
 func (s *internalEventSource) close(err error) {
 	s.mutex.LockFunc(func() {
 		s.err = err

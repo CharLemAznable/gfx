@@ -20,6 +20,7 @@ type EventSource interface {
 	Execute(listener ...EventListener) (EventSource, error)
 	Event() <-chan *Event
 	Err() error
+	Close()
 }
 
 func (c *Client) EventSource(method string, url string, data ...interface{}) EventSource {

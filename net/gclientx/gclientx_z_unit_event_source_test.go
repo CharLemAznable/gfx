@@ -75,6 +75,18 @@ func Test_EventSource(t *testing.T) {
 		_, ok := <-eventSource.Event()
 		t.Assert(ok, false)
 	})
+
+	gtest.C(t, func(t *gtest.T) {
+		eventSource, _ := client.GetEventSource("/sse").Execute()
+		event := <-eventSource.Event()
+		t.AssertNil(eventSource.Err())
+		t.Assert(event.Event, "message")
+		t.Assert(event.Data, "send message")
+		t.Assert(event.Id, "1")
+		eventSource.Close()
+		_, ok := <-eventSource.Event()
+		t.Assert(ok, false)
+	})
 }
 
 func Test_EventSource_Error(t *testing.T) {
