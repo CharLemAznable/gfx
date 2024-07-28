@@ -3,13 +3,13 @@ package gclientx
 import (
 	"bufio"
 	"context"
+	"github.com/gogf/gf/v2/container/gqueue"
 	"github.com/gogf/gf/v2/container/gtype"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gmutex"
 	"github.com/gogf/gf/v2/os/grpool"
 	"net/http"
 	"strings"
-	"sync"
 )
 
 var (
@@ -26,8 +26,9 @@ type internalEventSource struct {
 	url     string
 	data    []interface{}
 	mutex   *gmutex.Mutex
+	queueCh *gqueue.Queue
 	eventCh *gtype.Interface // Event channel.
-	eventWg sync.WaitGroup
+	queueLn *gqueue.Queue
 	eventLn *gtype.Interface // Event listener.
 	err     error
 }
@@ -39,7 +40,9 @@ func newEventSource(client *Client, method string, url string, data ...interface
 		url:     url,
 		data:    data,
 		mutex:   &gmutex.Mutex{},
+		queueCh: gqueue.New(),
 		eventCh: gtype.NewInterface(),
+		queueLn: gqueue.New(),
 		eventLn: gtype.NewInterface(),
 	}
 }
@@ -48,6 +51,12 @@ func (s *internalEventSource) Execute(listener ...EventListener) (EventSource, e
 	if len(listener) > 0 && listener[0] != nil {
 		s.mutex.LockFunc(func() {
 			s.eventLn.Set(listener[0])
+			go func(listener EventListener) {
+				for event := range s.queueCh.C {
+					listener.OnEvent(event.(*Event), nil)
+				}
+				listener.OnEvent(nil, s.Err())
+			}(listener[0])
 		})
 	}
 	return s, grpool.AddWithRecover(context.Background(), func(ctx context.Context) {
@@ -63,9 +72,9 @@ func (s *internalEventSource) Execute(listener ...EventListener) (EventSource, e
 			return
 		}
 		scanner := bufio.NewScanner(response.Body)
-		defer s.close(scanner.Err())
-		for s.processNextEvent(ctx, scanner) {
+		for s.processNextEvent(scanner) {
 		}
+		s.close(scanner.Err())
 	}, s.client.deferLogError)
 }
 
@@ -79,6 +88,12 @@ func (s *internalEventSource) Event() <-chan *Event {
 		if ch == nil {
 			ch = make(chan *Event)
 			s.eventCh.Set(ch)
+			go func(ch chan *Event) {
+				for event := range s.queueCh.C {
+					ch <- event.(*Event)
+				}
+				close(ch)
+			}(ch.(chan *Event))
 		}
 	})
 	return ch.(chan *Event)
@@ -100,21 +115,15 @@ func (s *internalEventSource) Close() {
 func (s *internalEventSource) close(err error) {
 	s.mutex.LockFunc(func() {
 		s.err = err
-		if ch := s.eventCh.Val(); ch != nil {
-			go func() {
-				s.eventWg.Wait()
-				close(ch.(chan *Event))
-			}()
-		} else {
+		s.queueCh.Close()
+		if ch := s.eventCh.Val(); ch == nil {
 			s.eventCh.Set(closedEvent)
 		}
-		if ln := s.eventLn.Val(); ln != nil {
-			go ln.(EventListener).OnEvent(nil, err)
-		}
+		s.queueLn.Close()
 	})
 }
 
-func (s *internalEventSource) processNextEvent(ctx context.Context, scanner *bufio.Scanner) bool {
+func (s *internalEventSource) processNextEvent(scanner *bufio.Scanner) bool {
 	event := &Event{}
 	foundEvent := false
 	for scanner.Scan() {
@@ -129,25 +138,11 @@ func (s *internalEventSource) processNextEvent(ctx context.Context, scanner *buf
 			foundEvent = true
 		default:
 			if strings.TrimSpace(line) == "" && foundEvent {
-				s.completeEvent(ctx, event)
+				s.queueCh.Push(event)
+				s.queueLn.Push(event)
 				return true
 			}
 		}
 	}
 	return false
-}
-
-func (s *internalEventSource) completeEvent(ctx context.Context, event *Event) {
-	if ch := s.eventCh.Val(); ch != nil {
-		_ = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			s.eventWg.Add(1)
-			defer s.eventWg.Done()
-			ch.(chan *Event) <- event
-		}, s.client.deferLogError)
-	}
-	if ln := s.eventLn.Val(); ln != nil {
-		_ = grpool.AddWithRecover(ctx, func(ctx context.Context) {
-			ln.(EventListener).OnEvent(event, nil)
-		}, s.client.deferLogError)
-	}
 }
