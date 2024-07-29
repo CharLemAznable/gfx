@@ -17,7 +17,7 @@ func (f EventListenerFunc) OnEvent(event *Event, err error) {
 }
 
 type EventSource interface {
-	Execute(listener ...EventListener) (EventSource, error)
+	Execute(listener ...EventListener) EventSource
 	Event() <-chan *Event
 	Err() error
 	Close()

@@ -12,14 +12,6 @@ import (
 	"strings"
 )
 
-var (
-	closedEvent = make(chan *Event)
-)
-
-func init() {
-	close(closedEvent)
-}
-
 type internalEventSource struct {
 	client  *Client
 	method  string
@@ -27,7 +19,7 @@ type internalEventSource struct {
 	data    []interface{}
 	mutex   *gmutex.Mutex
 	queueCh *gqueue.Queue
-	eventCh *gtype.Interface // Event channel.
+	eventCh chan *Event // Event channel.
 	queueLn *gqueue.Queue
 	eventLn *gtype.Interface // Event listener.
 	err     error
@@ -41,25 +33,31 @@ func newEventSource(client *Client, method string, url string, data ...interface
 		data:    data,
 		mutex:   &gmutex.Mutex{},
 		queueCh: gqueue.New(),
-		eventCh: gtype.NewInterface(),
+		eventCh: make(chan *Event),
 		queueLn: gqueue.New(),
 		eventLn: gtype.NewInterface(),
 	}
 }
 
-func (s *internalEventSource) Execute(listener ...EventListener) (EventSource, error) {
+func (s *internalEventSource) Execute(listener ...EventListener) EventSource {
+	go func(ch chan *Event) {
+		for event := range s.queueCh.C {
+			ch <- event.(*Event)
+		}
+		close(ch)
+	}(s.eventCh)
 	if len(listener) > 0 && listener[0] != nil {
 		s.mutex.LockFunc(func() {
 			s.eventLn.Set(listener[0])
 			go func(listener EventListener) {
-				for event := range s.queueCh.C {
+				for event := range s.queueLn.C {
 					listener.OnEvent(event.(*Event), nil)
 				}
 				listener.OnEvent(nil, s.Err())
 			}(listener[0])
 		})
 	}
-	return s, grpool.AddWithRecover(context.Background(), func(ctx context.Context) {
+	err := grpool.AddWithRecover(context.Background(), func(ctx context.Context) {
 		response, err := s.client.Client.
 			DoRequest(ctx, s.method, s.url, s.data...)
 		if err != nil {
@@ -68,7 +66,7 @@ func (s *internalEventSource) Execute(listener ...EventListener) (EventSource, e
 		}
 		defer s.client.deferCloseResponse(ctx, response)
 		if response.StatusCode != http.StatusOK {
-			s.close(gerror.New(response.Status))
+			s.close(gerror.New(string(response.ReadAll())))
 			return
 		}
 		scanner := bufio.NewScanner(response.Body)
@@ -76,27 +74,15 @@ func (s *internalEventSource) Execute(listener ...EventListener) (EventSource, e
 		}
 		s.close(scanner.Err())
 	}, s.client.deferLogError)
+	s.client.deferLogError(context.Background(), err)
+	return s
 }
 
-func (s *internalEventSource) Event() <-chan *Event {
-	ch := s.eventCh.Val()
-	if ch != nil {
-		return ch.(chan *Event)
-	}
+func (s *internalEventSource) Event() (ch <-chan *Event) {
 	s.mutex.LockFunc(func() {
-		ch = s.eventCh.Val()
-		if ch == nil {
-			ch = make(chan *Event)
-			s.eventCh.Set(ch)
-			go func(ch chan *Event) {
-				for event := range s.queueCh.C {
-					ch <- event.(*Event)
-				}
-				close(ch)
-			}(ch.(chan *Event))
-		}
+		ch = s.eventCh
 	})
-	return ch.(chan *Event)
+	return
 }
 
 func (s *internalEventSource) Err() (err error) {
@@ -116,9 +102,6 @@ func (s *internalEventSource) close(err error) {
 	s.mutex.LockFunc(func() {
 		s.err = err
 		s.queueCh.Close()
-		if ch := s.eventCh.Val(); ch == nil {
-			s.eventCh.Set(closedEvent)
-		}
 		s.queueLn.Close()
 	})
 }

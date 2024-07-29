@@ -71,7 +71,7 @@ func Test_ClientX(t *testing.T) {
 	})
 }
 
-func Test_ClientX_SetErrorLogger(t *testing.T) {
+func Test_ClientX_SetIntLog(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
 		t.AssertNE(gclientx.New().SetIntLog(g.Log()), nil)
 		t.AssertNE(gclientx.New().SetIntLog(nil), nil)
