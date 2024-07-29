@@ -49,14 +49,12 @@ func (s *internalEventSource) Execute(listener ...EventListener) EventSource {
 				listener.OnEvent(event)
 			}
 			listener.OnClose(s.Err())
-			s.finish()
 		}(listener[0])
 	} else {
 		go func() {
 			for range s.buffer {
 				// drain the buffer
 			}
-			s.finish()
 		}()
 	}
 	err := grpool.AddWithRecover(context.Background(), func(ctx context.Context) {
@@ -106,6 +104,12 @@ func (s *internalEventSource) close(err error) {
 	s.mutex.LockFunc(func() {
 		s.err = err
 		close(s.buffer)
+		d, _ := s.done.Val().(chan struct{})
+		if d == nil {
+			s.done.Set(closedDone)
+		} else {
+			close(d)
+		}
 	})
 }
 
@@ -130,15 +134,4 @@ func (s *internalEventSource) processNextEvent(scanner *bufio.Scanner) bool {
 		}
 	}
 	return false
-}
-
-func (s *internalEventSource) finish() {
-	s.mutex.LockFunc(func() {
-		d, _ := s.done.Val().(chan struct{})
-		if d == nil {
-			s.done.Set(closedDone)
-		} else {
-			close(d)
-		}
-	})
 }
