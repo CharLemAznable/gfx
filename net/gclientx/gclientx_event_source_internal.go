@@ -3,7 +3,6 @@ package gclientx
 import (
 	"bufio"
 	"context"
-	"github.com/gogf/gf/v2/container/gqueue"
 	"github.com/gogf/gf/v2/container/gtype"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gmutex"
@@ -12,50 +11,53 @@ import (
 	"strings"
 )
 
+var (
+	closedDone = make(chan struct{})
+)
+
+func init() {
+	close(closedDone)
+}
+
 type internalEventSource struct {
-	client  *Client
-	method  string
-	url     string
-	data    []interface{}
-	mutex   *gmutex.Mutex
-	queueCh *gqueue.Queue
-	eventCh chan *Event // Event channel.
-	queueLn *gqueue.Queue
-	eventLn *gtype.Interface // Event listener.
-	err     error
+	client *Client
+	method string
+	url    string
+	data   []interface{}
+	mutex  *gmutex.Mutex
+	buffer chan *Event
+	done   *gtype.Interface
+	err    error
 }
 
 func newEventSource(client *Client, method string, url string, data ...interface{}) *internalEventSource {
 	return &internalEventSource{
-		client:  client,
-		method:  method,
-		url:     url,
-		data:    data,
-		mutex:   &gmutex.Mutex{},
-		queueCh: gqueue.New(),
-		eventCh: make(chan *Event),
-		queueLn: gqueue.New(),
-		eventLn: gtype.NewInterface(),
+		client: client,
+		method: method,
+		url:    url,
+		data:   data,
+		mutex:  &gmutex.Mutex{},
+		buffer: make(chan *Event, 1024),
+		done:   gtype.NewInterface(),
 	}
 }
 
 func (s *internalEventSource) Execute(listener ...EventListener) EventSource {
-	go func(ch chan *Event) {
-		for event := range s.queueCh.C {
-			ch <- event.(*Event)
-		}
-		close(ch)
-	}(s.eventCh)
 	if len(listener) > 0 && listener[0] != nil {
-		s.mutex.LockFunc(func() {
-			s.eventLn.Set(listener[0])
-			go func(listener EventListener) {
-				for event := range s.queueLn.C {
-					listener.OnEvent(event.(*Event), nil)
-				}
-				listener.OnEvent(nil, s.Err())
-			}(listener[0])
-		})
+		go func(listener EventListener) {
+			for event := range s.buffer {
+				listener.OnEvent(event)
+			}
+			listener.OnClose(s.Err())
+			s.finish()
+		}(listener[0])
+	} else {
+		go func() {
+			for range s.buffer {
+				// drain the buffer
+			}
+			s.finish()
+		}()
 	}
 	err := grpool.AddWithRecover(context.Background(), func(ctx context.Context) {
 		response, err := s.client.Client.
@@ -78,11 +80,19 @@ func (s *internalEventSource) Execute(listener ...EventListener) EventSource {
 	return s
 }
 
-func (s *internalEventSource) Event() (ch <-chan *Event) {
+func (s *internalEventSource) Done() <-chan struct{} {
+	d := s.done.Val()
+	if d != nil {
+		return d.(chan struct{})
+	}
 	s.mutex.LockFunc(func() {
-		ch = s.eventCh
+		d = s.done.Val()
+		if d == nil {
+			d = make(chan struct{})
+			s.done.Set(d)
+		}
 	})
-	return
+	return d.(chan struct{})
 }
 
 func (s *internalEventSource) Err() (err error) {
@@ -92,17 +102,10 @@ func (s *internalEventSource) Err() (err error) {
 	return
 }
 
-func (s *internalEventSource) Close() {
-	for range s.Event() {
-		// drain the event channel
-	}
-}
-
 func (s *internalEventSource) close(err error) {
 	s.mutex.LockFunc(func() {
 		s.err = err
-		s.queueCh.Close()
-		s.queueLn.Close()
+		close(s.buffer)
 	})
 }
 
@@ -121,11 +124,21 @@ func (s *internalEventSource) processNextEvent(scanner *bufio.Scanner) bool {
 			foundEvent = true
 		default:
 			if strings.TrimSpace(line) == "" && foundEvent {
-				s.queueCh.Push(event)
-				s.queueLn.Push(event)
+				s.buffer <- event
 				return true
 			}
 		}
 	}
 	return false
+}
+
+func (s *internalEventSource) finish() {
+	s.mutex.LockFunc(func() {
+		d, _ := s.done.Val().(chan struct{})
+		if d == nil {
+			s.done.Set(closedDone)
+		} else {
+			close(d)
+		}
+	})
 }

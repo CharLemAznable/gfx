@@ -7,20 +7,34 @@ type Event struct {
 }
 
 type EventListener interface {
-	OnEvent(event *Event, err error)
+	OnEvent(event *Event)
+	OnClose(err error)
 }
 
 type EventListenerFunc func(event *Event, err error)
 
-func (f EventListenerFunc) OnEvent(event *Event, err error) {
-	f(event, err)
+func (f EventListenerFunc) OnEvent(event *Event) {
+	f(event, nil)
+}
+
+func (f EventListenerFunc) OnClose(err error) {
+	f(nil, err)
+}
+
+type EventListenerChan chan<- *Event
+
+func (c EventListenerChan) OnEvent(event *Event) {
+	c <- event
+}
+
+func (c EventListenerChan) OnClose(_ error) {
+	close(c)
 }
 
 type EventSource interface {
 	Execute(listener ...EventListener) EventSource
-	Event() <-chan *Event
+	Done() <-chan struct{}
 	Err() error
-	Close()
 }
 
 func (c *Client) EventSource(method string, url string, data ...interface{}) EventSource {

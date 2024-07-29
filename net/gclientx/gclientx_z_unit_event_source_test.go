@@ -32,14 +32,14 @@ func Test_EventSource(t *testing.T) {
 
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.GetEventSource("/sse")
-		t.AssertNE(eventSource.Event(), nil)
+		ch := make(chan *gclientx.Event)
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			count := 0
 			for {
-				event, ok := <-eventSource.Event()
+				event, ok := <-ch
 				count++
 				t.AssertNil(eventSource.Err())
 				if !ok {
@@ -51,15 +51,14 @@ func Test_EventSource(t *testing.T) {
 			}
 			t.Assert(count, 4)
 		}()
-		_ = eventSource.Execute()
-		defer eventSource.Close()
+		_ = eventSource.Execute(gclientx.EventListenerChan(ch))
 		wg.Wait()
 	})
 
 	gtest.C(t, func(t *gtest.T) {
 		var wg sync.WaitGroup
 		wg.Add(4)
-		eventSource := client.GetEventSource("/sse").Execute(
+		_ = client.GetEventSource("/sse").Execute(
 			gclientx.EventListenerFunc(func(event *gclientx.Event, err error) {
 				defer wg.Done()
 				t.AssertNil(err)
@@ -71,21 +70,13 @@ func Test_EventSource(t *testing.T) {
 				t.Assert(event.Id, "1")
 			}))
 		wg.Wait()
-		eventSource.Close()
-		_, ok := <-eventSource.Event()
-		t.Assert(ok, false)
 	})
 
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.GetEventSource("/sse").Execute()
-		event := <-eventSource.Event()
+		t.AssertNE(eventSource.Done(), nil)
+		<-eventSource.Done()
 		t.AssertNil(eventSource.Err())
-		t.Assert(event.Event, "message")
-		t.Assert(event.Data, "send message")
-		t.Assert(event.Id, "1")
-		eventSource.Close()
-		_, ok := <-eventSource.Event()
-		t.Assert(ok, false)
 	})
 }
 
@@ -103,15 +94,13 @@ func Test_EventSource_Error(t *testing.T) {
 
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.GetEventSource("").Execute()
-		for range eventSource.Event() {
-		}
+		<-eventSource.Done()
 		t.AssertNE(eventSource.Err(), nil)
 	})
 
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.Prefix(prefix).GetEventSource("/notfound").Execute()
-		for range eventSource.Event() {
-		}
+		<-eventSource.Done()
 		t.Assert(eventSource.Err().Error(), "Not Found")
 	})
 }
