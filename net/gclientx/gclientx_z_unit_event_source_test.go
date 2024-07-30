@@ -32,14 +32,13 @@ func Test_EventSource(t *testing.T) {
 
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.GetEventSource("/sse")
-		ch := make(chan *gclientx.Event)
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			count := 0
 			for {
-				event, ok := <-ch
+				event, ok := <-eventSource.Event()
 				count++
 				t.AssertNil(eventSource.Err())
 				if !ok {
@@ -51,31 +50,12 @@ func Test_EventSource(t *testing.T) {
 			}
 			t.Assert(count, 4)
 		}()
-		_ = eventSource.Execute(gclientx.EventListenerChan(ch))
 		wg.Wait()
 	})
 
 	gtest.C(t, func(t *gtest.T) {
-		var wg sync.WaitGroup
-		wg.Add(4)
-		_ = client.GetEventSource("/sse").Execute(
-			gclientx.EventListenerFunc(func(event *gclientx.Event, err error) {
-				defer wg.Done()
-				t.AssertNil(err)
-				if event == nil {
-					return
-				}
-				t.Assert(event.Event, "message")
-				t.Assert(event.Data, "send message")
-				t.Assert(event.Id, "1")
-			}))
-		wg.Wait()
-	})
-
-	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.GetEventSource("/sse").Execute()
-		t.AssertNE(eventSource.Done(), nil)
-		<-eventSource.Done()
+		eventSource := client.GetEventSource("/sse")
+		eventSource.Close()
 		t.AssertNil(eventSource.Err())
 	})
 }
@@ -93,14 +73,14 @@ func Test_EventSource_Error(t *testing.T) {
 	client := gclientx.New(g.Client())
 
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.GetEventSource("").Execute()
-		<-eventSource.Done()
+		eventSource := client.GetEventSource("")
+		eventSource.Close()
 		t.AssertNE(eventSource.Err(), nil)
 	})
 
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.Prefix(prefix).GetEventSource("/notfound").Execute()
-		<-eventSource.Done()
+		eventSource := client.Prefix(prefix).GetEventSource("/notfound")
+		eventSource.Close()
 		t.Assert(eventSource.Err().Error(), "Not Found")
 	})
 }

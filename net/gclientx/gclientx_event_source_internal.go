@@ -3,7 +3,6 @@ package gclientx
 import (
 	"bufio"
 	"context"
-	"github.com/gogf/gf/v2/container/gtype"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/os/gmutex"
 	"github.com/gogf/gf/v2/os/grpool"
@@ -26,36 +25,17 @@ type internalEventSource struct {
 	data   []interface{}
 	mutex  *gmutex.Mutex
 	buffer chan *Event
-	done   *gtype.Interface
 	err    error
 }
 
 func newEventSource(client *Client, method string, url string, data ...interface{}) *internalEventSource {
-	return &internalEventSource{
+	s := &internalEventSource{
 		client: client,
 		method: method,
 		url:    url,
 		data:   data,
 		mutex:  &gmutex.Mutex{},
 		buffer: make(chan *Event, 1024),
-		done:   gtype.NewInterface(),
-	}
-}
-
-func (s *internalEventSource) Execute(listener ...EventListener) EventSource {
-	if len(listener) > 0 && listener[0] != nil {
-		go func(listener EventListener) {
-			for event := range s.buffer {
-				listener.OnEvent(event)
-			}
-			listener.OnClose(s.Err())
-		}(listener[0])
-	} else {
-		go func() {
-			for range s.buffer {
-				// drain the buffer
-			}
-		}()
 	}
 	err := grpool.AddWithRecover(context.Background(), func(ctx context.Context) {
 		response, err := s.client.Client.
@@ -78,19 +58,8 @@ func (s *internalEventSource) Execute(listener ...EventListener) EventSource {
 	return s
 }
 
-func (s *internalEventSource) Done() <-chan struct{} {
-	d := s.done.Val()
-	if d != nil {
-		return d.(chan struct{})
-	}
-	s.mutex.LockFunc(func() {
-		d = s.done.Val()
-		if d == nil {
-			d = make(chan struct{})
-			s.done.Set(d)
-		}
-	})
-	return d.(chan struct{})
+func (s *internalEventSource) Event() <-chan *Event {
+	return s.buffer
 }
 
 func (s *internalEventSource) Err() (err error) {
@@ -100,16 +69,16 @@ func (s *internalEventSource) Err() (err error) {
 	return
 }
 
+func (s *internalEventSource) Close() {
+	for range s.buffer {
+		// Drain the buffer
+	}
+}
+
 func (s *internalEventSource) close(err error) {
 	s.mutex.LockFunc(func() {
 		s.err = err
 		close(s.buffer)
-		d, _ := s.done.Val().(chan struct{})
-		if d == nil {
-			s.done.Set(closedDone)
-		} else {
-			close(d)
-		}
 	})
 }
 
