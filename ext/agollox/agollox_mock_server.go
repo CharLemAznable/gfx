@@ -3,7 +3,6 @@ package agollox
 import (
 	"context"
 	"fmt"
-	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/util/guid"
@@ -19,7 +18,7 @@ func MockServer(appConfig *Config, mockFileName string) (*ghttp.Server, error) {
 	server.BindHandler(fmt.Sprintf("/configfiles/json/%s/%s/:namespace",
 		appConfig.AppID, appConfig.Cluster), func(r *ghttp.Request) {
 		value, _ := mockFile.Get(context.Background(), r.GetRouter("namespace").String())
-		r.Response.WriteJson(gjson.New(value).MustToJsonString())
+		r.Response.WriteJson(value)
 	})
 	server.BindHandler(fmt.Sprintf("/configs/%s/%s/:namespace",
 		appConfig.AppID, appConfig.Cluster), func(r *ghttp.Request) {
@@ -29,7 +28,7 @@ func MockServer(appConfig *Config, mockFileName string) (*ghttp.Server, error) {
 			"appId":          appConfig.AppID,
 			"cluster":        appConfig.Cluster,
 			"namespaceName":  namespace,
-			"configurations": gjson.New(value),
+			"configurations": value,
 			"releaseKey":     "",
 		})
 	})
