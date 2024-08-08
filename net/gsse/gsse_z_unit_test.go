@@ -90,6 +90,9 @@ func Test_SendEvent(t *testing.T) {
 func Test_SendEventWithId(t *testing.T) {
 	s := g.Server(guid.S())
 	s.BindHandler("/sse", gsse.Handle(func(client *gsse.Client) {
+		client.OnClose(func(client *gsse.Client) {
+			panic("ignored")
+		})
 		client.KeepAlive()
 		go func(client *gsse.Client) {
 			<-time.After(time.Second)
