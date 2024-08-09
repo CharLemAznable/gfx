@@ -85,11 +85,9 @@ func (c *Client) SetChangeListener(listener ChangeListener) *Client {
 func (c *Client) OnChange(event *storage.ChangeEvent) {
 	c.updateLocalMapping(false)
 	if listener, ok := c.listener.Val().(ChangeListener); ok && listener != nil {
-		go g.TryCatch(context.Background(), func(ctx context.Context) {
+		g.Go(context.Background(), func(_ context.Context) {
 			listener.OnChange(event)
-		}, func(ctx context.Context, exception error) {
-			// ignore
-		})
+		}, nil)
 	}
 }
 
