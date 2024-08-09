@@ -80,14 +80,14 @@ func (s *internalEventSource) processNextEvent(scanner *bufio.Scanner) bool {
 		line := scanner.Text()
 		switch {
 		case strings.HasPrefix(line, "id:"):
-			event.Id = strings.TrimPrefix(line, "id:")
+			event.Id = strings.TrimLeft(strings.TrimPrefix(line, "id:"), " ")
 		case strings.HasPrefix(line, "event:"):
-			event.Event = strings.TrimPrefix(line, "event:")
+			event.Event = strings.TrimLeft(strings.TrimPrefix(line, "event:"), " ")
 		case strings.HasPrefix(line, "data:"):
 			if event.Data != "" {
 				event.Data += "\n"
 			}
-			event.Data += strings.TrimPrefix(line, "data:")
+			event.Data += strings.TrimLeft(strings.TrimPrefix(line, "data:"), " ")
 			foundEvent = true
 		default:
 			if strings.TrimSpace(line) == "" && foundEvent {
