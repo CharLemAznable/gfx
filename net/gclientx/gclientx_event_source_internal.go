@@ -16,7 +16,7 @@ type internalEventSource struct {
 	url    string
 	data   []interface{}
 	mutex  *gmutex.Mutex
-	buffer chan Event
+	buffer chan *Event
 	err    error
 }
 
@@ -27,7 +27,7 @@ func newEventSource(client *Client, method string, url string, data ...interface
 		url:    url,
 		data:   data,
 		mutex:  &gmutex.Mutex{},
-		buffer: make(chan Event, 1024),
+		buffer: make(chan *Event, 1024),
 	}
 	go g.TryCatch(context.Background(), func(ctx context.Context) {
 		response, err := s.client.Client.
@@ -49,7 +49,7 @@ func newEventSource(client *Client, method string, url string, data ...interface
 	return s
 }
 
-func (s *internalEventSource) Event() <-chan Event {
+func (s *internalEventSource) Event() <-chan *Event {
 	return s.buffer
 }
 
@@ -74,7 +74,7 @@ func (s *internalEventSource) close(err error) {
 }
 
 func (s *internalEventSource) processNextEvent(scanner *bufio.Scanner) bool {
-	event := Event{}
+	event := &Event{}
 	foundEvent := false
 	for scanner.Scan() {
 		line := scanner.Text()
