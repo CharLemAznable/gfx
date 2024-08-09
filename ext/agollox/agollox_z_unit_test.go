@@ -57,6 +57,14 @@ func Test_Default(t *testing.T) {
   key: "new value"`)
 		time.Sleep(time.Second * 3)
 		t.Assert(client.Get("key"), "new value")
+
+		client.SetChangeListener(agollox.ChangeListenerFunc(func(event *agollox.ChangeEvent) {
+			panic("ignored")
+		}))
+		_ = gfile.PutContents(mockFileName, `application:
+  key: "value"`)
+		time.Sleep(time.Second * 3)
+		t.Assert(client.Get("key"), "value")
 	})
 }
 

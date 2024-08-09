@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gmutex"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/gogf/gf/v2/util/gvalid"
@@ -84,7 +85,11 @@ func (c *Client) SetChangeListener(listener ChangeListener) *Client {
 func (c *Client) OnChange(event *storage.ChangeEvent) {
 	c.updateLocalMapping(false)
 	if listener, ok := c.listener.Val().(ChangeListener); ok && listener != nil {
-		go listener.OnChange(event)
+		go g.TryCatch(context.Background(), func(ctx context.Context) {
+			listener.OnChange(event)
+		}, func(ctx context.Context, exception error) {
+			// ignore
+		})
 	}
 }
 
