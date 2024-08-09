@@ -7,7 +7,7 @@ type Event struct {
 }
 
 type EventSource interface {
-	Event() <-chan *Event
+	Event() <-chan Event
 	Err() error
 	Close()
 }

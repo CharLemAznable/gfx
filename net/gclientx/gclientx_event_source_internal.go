@@ -4,19 +4,11 @@ import (
 	"bufio"
 	"context"
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gmutex"
-	"github.com/gogf/gf/v2/os/grpool"
 	"net/http"
 	"strings"
 )
-
-var (
-	closedDone = make(chan struct{})
-)
-
-func init() {
-	close(closedDone)
-}
 
 type internalEventSource struct {
 	client *Client
@@ -24,7 +16,7 @@ type internalEventSource struct {
 	url    string
 	data   []interface{}
 	mutex  *gmutex.Mutex
-	buffer chan *Event
+	buffer chan Event
 	err    error
 }
 
@@ -35,9 +27,9 @@ func newEventSource(client *Client, method string, url string, data ...interface
 		url:    url,
 		data:   data,
 		mutex:  &gmutex.Mutex{},
-		buffer: make(chan *Event, 1024),
+		buffer: make(chan Event, 1024),
 	}
-	err := grpool.AddWithRecover(context.Background(), func(ctx context.Context) {
+	go g.TryCatch(context.Background(), func(ctx context.Context) {
 		response, err := s.client.Client.
 			DoRequest(ctx, s.method, s.url, s.data...)
 		if err != nil {
@@ -50,15 +42,14 @@ func newEventSource(client *Client, method string, url string, data ...interface
 			return
 		}
 		scanner := bufio.NewScanner(response.Body)
+		defer s.close(scanner.Err())
 		for s.processNextEvent(scanner) {
 		}
-		s.close(scanner.Err())
 	}, s.client.deferLogError)
-	s.client.deferLogError(context.Background(), err)
 	return s
 }
 
-func (s *internalEventSource) Event() <-chan *Event {
+func (s *internalEventSource) Event() <-chan Event {
 	return s.buffer
 }
 
@@ -83,17 +74,20 @@ func (s *internalEventSource) close(err error) {
 }
 
 func (s *internalEventSource) processNextEvent(scanner *bufio.Scanner) bool {
-	event := &Event{}
+	event := Event{}
 	foundEvent := false
 	for scanner.Scan() {
 		line := scanner.Text()
 		switch {
 		case strings.HasPrefix(line, "id:"):
-			event.Id = strings.TrimSpace(strings.TrimPrefix(line, "id:"))
+			event.Id = strings.TrimPrefix(line, "id:")
 		case strings.HasPrefix(line, "event:"):
-			event.Event = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
+			event.Event = strings.TrimPrefix(line, "event:")
 		case strings.HasPrefix(line, "data:"):
-			event.Data = strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+			if event.Data != "" {
+				event.Data += "\n"
+			}
+			event.Data += strings.TrimPrefix(line, "data:")
 			foundEvent = true
 		default:
 			if strings.TrimSpace(line) == "" && foundEvent {

@@ -16,11 +16,11 @@ func Test_EventSource(t *testing.T) {
 	s := g.Server(guid.S())
 	s.BindHandler("/sse", gsse.Handle(func(client *gsse.Client) {
 		client.SendComment("send message")
-		client.SendEventWithId("message", "send message", "1")
+		client.SendEventWithId("1", "message", "send message", "send message")
 		client.SendComment("send message")
-		client.SendEventWithId("message", "send message", "1")
+		client.SendEventWithId("1", "message", "send message", "send message")
 		client.SendComment("send message")
-		client.SendEventWithId("message", "send message", "1")
+		client.SendEventWithId("1", "message", "send message", "send message")
 		client.SendComment("send message")
 	}))
 	s.SetDumpRouterMap(false)
@@ -45,7 +45,7 @@ func Test_EventSource(t *testing.T) {
 					break
 				}
 				t.Assert(event.Event, "message")
-				t.Assert(event.Data, "send message")
+				t.Assert(event.Data, "send message\nsend message")
 				t.Assert(event.Id, "1")
 			}
 			t.Assert(count, 4)
@@ -63,7 +63,7 @@ func Test_EventSource(t *testing.T) {
 func Test_EventSource_Error(t *testing.T) {
 	s := g.Server(guid.S())
 	s.BindHandler("/sse", gsse.Handle(func(client *gsse.Client) {
-		client.SendEventWithId("message", "send message", "1")
+		client.SendEventWithId("1", "message", "send message")
 	}))
 	s.SetDumpRouterMap(false)
 	_ = s.Start()

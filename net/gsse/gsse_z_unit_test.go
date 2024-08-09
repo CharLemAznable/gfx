@@ -14,8 +14,10 @@ import (
 func Test_SendMessage(t *testing.T) {
 	s := g.Server(guid.S())
 	s.BindHandler("/sse", gsse.Handle(func(client *gsse.Client) {
-		client.SendMessage("send message")
-		client.SendComment("send comment")
+		client.SendMessage("send message1", "send message2")
+		client.SendComment("send comment1", "send comment2")
+		client.SendMessage()
+		client.SendComment()
 	}))
 	s.SetDumpRouterMap(false)
 	_ = s.Start()
@@ -28,7 +30,7 @@ func Test_SendMessage(t *testing.T) {
 		client.SetPrefix(prefix)
 
 		t.Assert(client.GetContent(gctx.New(), "/sse"),
-			"data:send message\n\n:send comment\n\n")
+			"data:send message1\ndata:send message2\n\n:send comment1\n:send comment2\n")
 	})
 }
 
@@ -39,7 +41,7 @@ func Test_SendMessageWithId(t *testing.T) {
 		client.OnClose(func(client *gsse.Client) {
 			ch <- client.Terminated()
 		})
-		client.SendMessageWithId("send message with id", "1")
+		client.SendMessageWithId("1", "send message with id")
 	}))
 	s.SetDumpRouterMap(false)
 	_ = s.Start()
@@ -52,7 +54,7 @@ func Test_SendMessageWithId(t *testing.T) {
 		client.SetPrefix(prefix)
 
 		t.Assert(client.GetContent(gctx.New(), "/sse"),
-			"data:send message with id\nid:1\n\n")
+			"id:1\ndata:send message with id\n\n")
 
 		select {
 		case value := <-ch:
@@ -83,7 +85,7 @@ func Test_SendEvent(t *testing.T) {
 		client.SetPrefix(prefix)
 
 		t.Assert(client.GetContent(gctx.New(), "/sse"),
-			":\n\nevent:test\ndata:send event\n\n")
+			":\nevent:test\ndata:send event\n\n")
 	})
 }
 
@@ -96,7 +98,7 @@ func Test_SendEventWithId(t *testing.T) {
 		client.KeepAlive()
 		go func(client *gsse.Client) {
 			<-time.After(time.Second)
-			client.SendEventWithId("test", "send event", "2")
+			client.SendEventWithId("2", "test", "send event")
 			client.Close()
 			client.SendComment("send comment")
 		}(client)
@@ -112,6 +114,6 @@ func Test_SendEventWithId(t *testing.T) {
 		client.SetPrefix(prefix)
 
 		t.Assert(client.GetContent(gctx.New(), "/sse"),
-			":\n\nevent:test\ndata:send event\nid:2\n\n")
+			":\nid:2\nevent:test\ndata:send event\n\n")
 	})
 }

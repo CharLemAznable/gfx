@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	NoEvent      = ""
 	NoId         = ""
+	NoEvent      = ""
 	EmptyComment = ""
 )
 
@@ -38,38 +38,43 @@ func (c *Client) Context() context.Context {
 	return c.Request().Context()
 }
 
-// SendMessage calls emit(noEvent, "data", noId)
-func (c *Client) SendMessage(data string) {
-	c.emit(NoEvent, data, NoId)
+// SendMessage calls emit(NoId, NoEvent, data...)
+func (c *Client) SendMessage(data ...string) {
+	c.emit(NoId, NoEvent, data...)
 }
 
-// SendMessageWithId calls emit(noEvent, "data", "id")
-func (c *Client) SendMessageWithId(data, id string) {
-	c.emit(NoEvent, data, id)
+// SendMessageWithId calls emit(id, NoEvent, data...)
+func (c *Client) SendMessageWithId(id string, data ...string) {
+	c.emit(id, NoEvent, data...)
 }
 
-// SendEvent calls emit("event", "data", noId)
-func (c *Client) SendEvent(event, data string) {
-	c.emit(event, data, NoId)
+// SendEvent calls emit(NoId, event, data...)
+func (c *Client) SendEvent(event string, data ...string) {
+	c.emit(NoId, event, data...)
 }
 
-// SendEventWithId calls emit("event", "data", "id")
-func (c *Client) SendEventWithId(event, data, id string) {
-	c.emit(event, data, id)
+// SendEventWithId calls emit(id, event, data...)
+func (c *Client) SendEventWithId(id, event string, data ...string) {
+	c.emit(id, event, data...)
 }
 
-func (c *Client) emit(event, data, id string) {
+func (c *Client) emit(id, event string, data ...string) {
+	if len(data) == 0 { // data: required
+		return
+	}
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	select {
 	case <-c.Context().Done():
 	default:
+		if id != NoId { // id: not required
+			c.Response().Writeln("id:", id)
+		}
 		if event != NoEvent { // event: not required
 			c.Response().Writeln("event:", event)
 		}
-		c.Response().Writeln("data:", data)
-		if id != NoId { // id: not required
-			c.Response().Writeln("id:", id)
+		for _, dt := range data {
+			c.Response().Writeln("data:", dt)
 		}
 		c.Response().Writeln()
 		c.Response().Flush()
@@ -77,10 +82,13 @@ func (c *Client) emit(event, data, id string) {
 }
 
 // SendComment send comment with prefix":"
-func (c *Client) SendComment(comment string) {
+func (c *Client) SendComment(comment ...string) {
+	if len(comment) == 0 {
+		return
+	}
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	c.comment(comment)
+	c.comment(comment...)
 }
 
 func (c *Client) heartbeat() {
@@ -89,12 +97,13 @@ func (c *Client) heartbeat() {
 	})
 }
 
-func (c *Client) comment(comment string) {
+func (c *Client) comment(comment ...string) {
 	select {
 	case <-c.Context().Done():
 	default:
-		c.Response().Writeln(":", comment)
-		c.Response().Writeln()
+		for _, cm := range comment {
+			c.Response().Writeln(":", cm)
+		}
 		c.Response().Flush()
 	}
 }
