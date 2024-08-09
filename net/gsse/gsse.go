@@ -2,8 +2,8 @@ package gsse
 
 import (
 	"context"
+	"github.com/CharLemAznable/gfx/frame/gx"
 	"github.com/gogf/gf/v2/container/gtype"
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gmutex"
 )
@@ -144,10 +144,8 @@ func newClient(request *ghttp.Request) *Client {
 	go func() {
 		<-client.Context().Done()
 		if onClose := client.onClose.Val(); onClose != nil {
-			go g.TryCatch(context.Background(), func(ctx context.Context) {
+			gx.GoIgnoreX(func() {
 				onClose.(func(*Client))(client)
-			}, func(ctx context.Context, exception error) {
-				// ignore
 			})
 		}
 	}()
