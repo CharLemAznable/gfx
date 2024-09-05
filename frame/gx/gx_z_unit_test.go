@@ -55,3 +55,21 @@ func Test_Func(t *testing.T) {
 		})
 	})
 }
+
+type ts struct {
+	i int
+}
+
+func Test_Func_T(t *testing.T) {
+	gtest.C(t, func(t *gtest.T) {
+		from := []ts{
+			{1},
+			{2},
+			{3},
+		}
+		to := gx.SliceInterfaces(from)
+		for i, item := range to {
+			t.Assert(item, from[i])
+		}
+	})
+}
