@@ -2,15 +2,29 @@ package gclientx
 
 import "fmt"
 
-type statusError struct {
-	status  int
-	message string
+type HttpError interface {
+	Error() string
+	StatusCode() int
+	StatusText() string
 }
 
-func (e *statusError) Error() string {
-	return fmt.Sprintf("%d: %s", e.status, e.message)
+func NewHttpError(statusCode int, statusText string) error {
+	return &localHttpError{statusCode: statusCode, statusText: statusText}
 }
 
-func NewStatusError(status int, message string) error {
-	return &statusError{status: status, message: message}
+type localHttpError struct {
+	statusCode int
+	statusText string
+}
+
+func (e *localHttpError) Error() string {
+	return fmt.Sprintf("%d %s", e.statusCode, e.statusText)
+}
+
+func (e *localHttpError) StatusCode() int {
+	return e.statusCode
+}
+
+func (e *localHttpError) StatusText() string {
+	return e.statusText
 }

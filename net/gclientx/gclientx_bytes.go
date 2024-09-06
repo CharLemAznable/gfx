@@ -11,9 +11,9 @@ func (c *Client) RequestBytes(ctx context.Context, method string, url string, da
 		return nil, err
 	}
 	defer c.deferCloseResponse(ctx, response)
-	status, body := response.StatusCode, response.ReadAll()
-	if status >= http.StatusBadRequest {
-		return nil, NewStatusError(status, string(body))
+	statusCode, body := response.StatusCode, response.ReadAll()
+	if statusCode >= http.StatusBadRequest {
+		return nil, NewHttpError(statusCode, string(body))
 	}
 	return body, nil
 }
