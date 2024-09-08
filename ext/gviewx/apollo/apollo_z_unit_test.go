@@ -7,7 +7,6 @@ import (
 	"github.com/CharLemAznable/gfx/ext/gviewx/apollo"
 	"github.com/CharLemAznable/gfx/frame/gx"
 	"github.com/gogf/gf/v2/os/genv"
-	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/test/gtest"
 	"testing"
 )
@@ -16,7 +15,15 @@ var (
 	ctx = context.TODO()
 )
 
-func Test_Normal(t *testing.T) {
+func Test_ApolloAdapter(t *testing.T) {
+	gtest.C(t, func(t *gtest.T) {
+		_ = genv.Set("GF_APOLLO_CONFIG_FILE", "testdata/config.none")
+		_ = genv.Set("GF_APOLLO_APPID", "test")
+		defer func() { _ = genv.Remove("GF_APOLLO_CONFIG_FILE", "GF_APOLLO_APPID") }()
+		_, err := apollo.LoadAdapter(ctx)
+		t.AssertNE(err, nil)
+		t.Assert(err.Error(), "create agollo client failed: Apollo IP field is required")
+	})
 	gtest.C(t, func(t *gtest.T) {
 		mockConfig := agollox.DefaultConfig()
 		mockConfig.AppID = "test"
@@ -24,11 +31,11 @@ func Test_Normal(t *testing.T) {
 		defer func() { _ = mockServer.Shutdown() }()
 		mockIP := fmt.Sprintf(`http://127.0.0.1:%d`, mockServer.GetListenedPort())
 
-		_ = gfile.PutContents("testdata/apollo.yaml", `appId: "test"
-ip: "`+mockIP+`"
-backupConfigPath: ".apollo.bk"`)
+		_ = genv.Set("GF_APOLLO_APPID", "test")
+		_ = genv.Set("GF_APOLLO_IP", mockIP)
+		defer func() { _ = genv.Remove("GF_APOLLO_APPID", "GF_APOLLO_IP") }()
 
-		adapter, err := apollo.LoadAdapter(ctx, "testdata/apollo")
+		adapter, err := apollo.LoadAdapter(ctx)
 		t.AssertNE(adapter, nil)
 		t.AssertNil(err)
 
@@ -44,36 +51,5 @@ backupConfigPath: ".apollo.bk"`)
 		parsed, err := gx.ViewX().Parse(ctx, "tmpl", map[string]interface{}{"Name": "gf"})
 		t.Assert(parsed, "Hello, gf!")
 		t.AssertNil(err)
-
-		_ = gfile.PutContents("testdata/apollo.yaml", "")
-	})
-}
-
-func Test_Error(t *testing.T) {
-	gtest.C(t, func(t *gtest.T) {
-		_ = genv.Set("GF_GCFG_PATH", "errorpath")
-		defer func() { _ = genv.Remove("GF_GCFG_PATH") }()
-
-		_, err := apollo.LoadAdapter(ctx, "testdata/apollo")
-		t.AssertNE(err, nil)
-	})
-	gtest.C(t, func(t *gtest.T) {
-		_ = genv.Set("GF_GVIEWX_APOLLO_APPID", "AppId")
-		defer func() { _ = genv.Remove("GF_GVIEWX_APOLLO_APPID") }()
-
-		adapter, err := apollo.LoadAdapter(ctx, "testdata/apollo_error")
-		t.AssertNil(adapter)
-		t.AssertNE(err, nil)
-		t.Assert(err.Error(), "Apollo IP field is required")
-
-		adapter, err = apollo.LoadAdapter(ctx, "testdata/apollo_none")
-		t.AssertNil(adapter)
-		t.AssertNE(err, nil)
-		t.Assert(err.Error(), "Apollo IP field is required")
-	})
-	gtest.C(t, func(t *gtest.T) {
-		adapter, err := apollo.LoadAdapter(ctx, "testdata/apollo_local")
-		t.AssertNil(adapter)
-		t.AssertNE(err, nil)
 	})
 }

@@ -3,6 +3,7 @@ package agollox
 import (
 	"context"
 	"github.com/apolloconfig/agollo/v4"
+	"github.com/apolloconfig/agollo/v4/env/config"
 	"github.com/apolloconfig/agollo/v4/storage"
 	"github.com/gogf/gf/v2/container/gmap"
 	"github.com/gogf/gf/v2/container/gvar"
@@ -10,55 +11,27 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gmutex"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/gogf/gf/v2/util/gvalid"
 )
 
 type Client struct {
-	client   agollo.Client
-	config   *Config
+	client   *configClient
 	mapValue *gvar.Var
 	mapMutex *gmutex.Mutex
 	listener *gvar.Var
 }
 
-var (
-	configRules = map[string]string{
-		"appId": "required",
-		"ip":    "required",
-	}
-	configMessage = map[string]interface{}{
-		"appId": "Apollo AppId field is required",
-		"ip":    "Apollo IP field is required",
-	}
-)
-
-func NewClient(ctx context.Context, config *Config) (*Client, error) {
-	if config.Cluster == "" {
-		config.Cluster = defaultCluster
-	}
-	if config.NamespaceName == "" {
-		config.NamespaceName = defaultNamespace
-	}
-	if err := gvalid.New().
-		Rules(configRules).Messages(configMessage).
-		Data(config).Run(ctx); err != nil {
-		return nil, err
-	}
-
-	agolloClient, err := agollo.StartWithConfig(func() (*Config, error) {
-		return config, nil
-	})
+func NewClient(ctx context.Context) (*Client, error) {
+	intClient, err := agolloInstance(ctx) // agollo client 为单例
 	if err != nil {
-		return nil, gerror.Wrapf(err, `create agollo client failed with config: %+v`, config)
+		return nil, gerror.Wrapf(err, `create agollo client failed`)
 	}
 	client := &Client{
-		client:   agolloClient,
-		config:   config,
+		client:   intClient,
 		mapValue: gvar.New(nil, true),
 		mapMutex: &gmutex.Mutex{},
 		listener: gvar.New(nil, true),
 	}
-	client.client.AddChangeListener(client)
+	intClient.client.AddChangeListener(client)
 	return client, nil
 }
 
@@ -104,11 +77,61 @@ func (c *Client) updateLocalMapping(onlyIfValueIsNil bool) {
 			return
 		}
 		m := gmap.NewStrAnyMap(true)
-		cache := c.client.GetConfigCache(c.config.NamespaceName)
-		cache.Range(func(key, value interface{}) bool {
-			m.Set(gconv.String(key), value)
-			return true
+		intClient := c.client
+		config.SplitNamespaces(intClient.config.NamespaceName, func(namespace string) {
+			// 如果配置了多namespace, 会合并所有的键值对
+			// 且后置的namespace会覆盖前置的namespace的同名键
+			cache := intClient.client.GetConfigCache(namespace)
+			if cache != nil {
+				cache.Range(func(key, value interface{}) bool {
+					m.Set(gconv.String(key), value)
+					return true
+				})
+			}
 		})
 		c.mapValue.Set(m)
 	})
+}
+
+type configClient struct {
+	config *Config
+	client agollo.Client
+}
+
+var (
+	agolloVar   = gvar.New(nil, true)
+	agolloMutex = &gmutex.Mutex{}
+)
+
+func agolloInstance(ctx context.Context) (client *configClient, err error) {
+	if !agolloVar.IsNil() {
+		client = agolloVar.Val().(*configClient)
+		return
+	}
+	agolloMutex.LockFunc(func() {
+		if !agolloVar.IsNil() {
+			client = agolloVar.Val().(*configClient)
+			return
+		}
+		var (
+			cfg *Config
+			cli agollo.Client
+		)
+		cfg, err = LoadConfig(ctx)
+		if err != nil {
+			return
+		}
+		cli, err = agollo.StartWithConfig(func() (*Config, error) {
+			return cfg, nil
+		})
+		if err != nil {
+			return
+		}
+		client = &configClient{
+			config: cfg,
+			client: cli,
+		}
+		agolloVar.Set(client)
+	})
+	return
 }

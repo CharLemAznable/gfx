@@ -1,0 +1,4 @@
+appId: "test"
+ip: "http://localhost:8888"
+backupConfigPath: ".apollo.local"
+mustStart: true

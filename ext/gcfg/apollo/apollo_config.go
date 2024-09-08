@@ -3,42 +3,41 @@ package apollo
 import (
 	"context"
 	"github.com/CharLemAznable/gfx/ext/agollox"
+	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/os/gcmd"
 )
 
 type Config struct {
-	agollox.Config
 	Key   string `json:"key"`
 	Watch bool   `json:"watch"`
 }
 
 const (
-	defaultConfigFileName = "apollo"
-
 	defaultKey = "config"
 
-	apolloAppIdPattern     = "gf.gcfg.apollo.appid"
-	apolloClusterPattern   = "gf.gcfg.apollo.cluster"
-	apolloNamespacePattern = "gf.gcfg.apollo.namespace"
-	apolloIPPattern        = "gf.gcfg.apollo.ip"
-	apolloKeyPattern       = "gf.gcfg.apollo.key"
+	apolloKeyPattern   = "gf.gcfg.apollo.key"
+	apolloWatchPattern = "gf.gcfg.apollo.watch"
 )
 
-func LoadConfig(ctx context.Context, fileName ...string) (*Config, error) {
-	configFileName := defaultConfigFileName
-	if len(fileName) > 0 && fileName[0] != "" {
-		configFileName = fileName[0]
-	}
-	apolloConfig := &Config{Config: *agollox.DefaultConfig(), Key: defaultKey, Watch: true}
-	err := agollox.LoadConfig(ctx, apolloConfig, configFileName, map[string]interface{}{
-		agollox.ConfigAppIdKey:     gcmd.GetOptWithEnv(apolloAppIdPattern).Val(),
-		agollox.ConfigClusterKey:   gcmd.GetOptWithEnv(apolloClusterPattern).Val(),
-		agollox.ConfigNamespaceKey: gcmd.GetOptWithEnv(apolloNamespacePattern).Val(),
-		agollox.ConfigIPKey:        gcmd.GetOptWithEnv(apolloIPPattern).Val(),
-		"key":                      gcmd.GetOptWithEnv(apolloKeyPattern).Val(),
-	})
+func LoadConfig(ctx context.Context) (*Config, error) {
+	fileConfigMap, err := agollox.LoadFileConfigMap(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return apolloConfig, nil
+	configMap := agollox.MapOmitNil(map[string]interface{}{
+		"key":   gcmd.GetOptWithEnv(apolloKeyPattern).Val(),
+		"watch": gcmd.GetOptWithEnv(apolloWatchPattern).Val(),
+	})
+	agollox.MapFill(configMap, agollox.MapOmitNil(map[string]interface{}{
+		"key":   fileConfigMap["key"],
+		"watch": fileConfigMap["watch"],
+	}))
+	config := &Config{Key: defaultKey, Watch: true}
+	if err = gvar.New(configMap).Struct(config); err != nil {
+		return nil, err
+	}
+	if config.Key == "" {
+		config.Key = defaultKey
+	}
+	return config, nil
 }
