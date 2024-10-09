@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/CharLemAznable/gfx v0.8.3
 	github.com/CharLemAznable/gfx/ext/agollox v0.8.3
-	github.com/gogf/gf/v2 v2.7.3
+	github.com/gogf/gf/v2 v2.7.4
 )
 
 require (
