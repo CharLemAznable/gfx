@@ -29,7 +29,7 @@ func newEventSource(client *Client, method string, url string, data ...interface
 		mutex:  &gmutex.Mutex{},
 		buffer: make(chan *Event, 1024),
 	}
-	go g.TryCatch(context.Background(), func(ctx context.Context) {
+	g.Go(context.Background(), func(ctx context.Context) {
 		response, err := s.client.Client.
 			DoRequest(ctx, s.method, s.url, s.data...)
 		if err != nil {
