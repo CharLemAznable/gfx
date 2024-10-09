@@ -2,51 +2,14 @@ package gclientx
 
 import (
 	"bufio"
-	"context"
-	"github.com/gogf/gf/v2/errors/gerror"
-	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gmutex"
-	"net/http"
 	"strings"
 )
 
 type internalEventSource struct {
-	client *Client
-	method string
-	url    string
-	data   []interface{}
 	mutex  *gmutex.Mutex
 	buffer chan *Event
 	err    error
-}
-
-func newEventSource(client *Client, method string, url string, data ...interface{}) *internalEventSource {
-	s := &internalEventSource{
-		client: client,
-		method: method,
-		url:    url,
-		data:   data,
-		mutex:  &gmutex.Mutex{},
-		buffer: make(chan *Event, 1024),
-	}
-	g.Go(context.Background(), func(ctx context.Context) {
-		response, err := s.client.Client.
-			DoRequest(ctx, s.method, s.url, s.data...)
-		if err != nil {
-			s.close(err)
-			return
-		}
-		defer s.client.deferCloseResponse(ctx, response)
-		if response.StatusCode != http.StatusOK {
-			s.close(gerror.New(string(response.ReadAll())))
-			return
-		}
-		scanner := bufio.NewScanner(response.Body)
-		defer s.close(scanner.Err())
-		for s.processNextEvent(scanner) {
-		}
-	}, s.client.deferLogError)
-	return s
 }
 
 func (s *internalEventSource) Event() <-chan *Event {
