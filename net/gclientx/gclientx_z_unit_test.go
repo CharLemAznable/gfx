@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/CharLemAznable/gfx/net/gclientx"
+	"github.com/CharLemAznable/gfx/os/gviewx"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/test/gtest"
@@ -125,5 +126,46 @@ func Test_ClientX_SetIntLog(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
 		t.AssertNE(gclientx.New().SetIntLog(g.Log()), nil)
 		t.AssertNE(gclientx.New().SetIntLog(nil), nil)
+	})
+}
+
+func Test_ClientX_Tmpl_Request(t *testing.T) {
+	s := g.Server(guid.S())
+	s.BindHandler("/hello", func(r *ghttp.Request) {
+		r.Response.Write("world")
+	})
+	s.BindHandler("/error", func(r *ghttp.Request) {
+		r.Response.WriteStatusExit(http.StatusInternalServerError)
+	})
+	s.SetDumpRouterMap(false)
+	_ = s.Start()
+	defer func() { _ = s.Shutdown() }()
+	time.Sleep(100 * time.Millisecond)
+	params := g.Map{"ListenedPort": s.GetListenedPort()}
+	view := gviewx.New().SetAdapter(gviewx.NewAdapterFile("testdata"))
+	client := gclientx.New()
+
+	gtest.C(t, func(t *gtest.T) {
+		content, err := client.TmplRequestContent(ctx, view, "hello", params)
+		t.Assert(content, "world")
+		t.AssertNil(err)
+		val, err := client.TmplRequestVar(ctx, view, "hello", params)
+		t.Assert(val.String(), "world")
+		t.AssertNil(err)
+
+		bytes, err := client.TmplRequestBytes(ctx, view, "error", params)
+		t.AssertNil(bytes)
+		httpErr, ok := err.(gclientx.HttpError)
+		t.Assert(ok, true)
+		t.Assert(httpErr.StatusCode(), http.StatusInternalServerError)
+		t.Assert(httpErr.StatusText(), http.StatusText(http.StatusInternalServerError))
+
+		_, err = client.TmplRequestContent(ctx, view, "notfound", params)
+		t.Assert(err.Error(), "parse tmpl failed: template file \"notfound\" not found")
+		_, err = client.TmplRequestVar(ctx, view, "illegal", params)
+		t.Assert(err.Error(), "read request failed: unexpected EOF")
+
+		_, err = client.TmplRequestBytes(ctx, view, "fail")
+		t.Assert(err.Error(), "request failed: Get \"/hello\": unsupported protocol scheme \"\"")
 	})
 }
