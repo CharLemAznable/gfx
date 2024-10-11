@@ -105,9 +105,30 @@ func Test_eventSource_Tmpl_Request(t *testing.T) {
 	_ = s.Start()
 	defer func() { _ = s.Shutdown() }()
 	time.Sleep(100 * time.Millisecond)
-	params := g.Map{"ListenedPort": s.GetListenedPort()}
-	view := gviewx.New().SetAdapter(gviewx.NewAdapterFile("testdata"))
 	client := gclientx.New()
+	url := fmt.Sprintf("http://127.0.0.1:%d", s.GetListenedPort())
+	view := gviewx.New().SetAdapter(gviewx.NewAdapterFile("testdata"))
+	params := g.Map{"ListenedPort": s.GetListenedPort()}
+
+	gtest.C(t, func(t *gtest.T) {
+		eventSource := client.RawContentEventSource("GET " + url + "/hello HTTP/1.1\n\n")
+		defer eventSource.Close()
+		for event := range eventSource.Event() {
+			t.Assert(event.Event, "message")
+			t.Assert(event.Data, "send message \nsend message ")
+			t.Assert(event.Id, "1")
+		}
+	})
+	gtest.C(t, func(t *gtest.T) {
+		eventSource := client.RawContentEventSource("GET " + url + "/error HTTP/1.1\n\n")
+		eventSource.Close()
+		t.Assert(eventSource.Err().Error(), "Internal Server Error")
+	})
+	gtest.C(t, func(t *gtest.T) {
+		eventSource := client.RawContentEventSource("GET /hello HTTP/1.1\n\n")
+		eventSource.Close()
+		t.Assert(eventSource.Err().Error(), "request failed: Get \"/hello\": unsupported protocol scheme \"\"")
+	})
 
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.TmplEventSource(view, "hello", params)

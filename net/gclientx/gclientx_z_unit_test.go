@@ -141,9 +141,32 @@ func Test_ClientX_Tmpl_Request(t *testing.T) {
 	_ = s.Start()
 	defer func() { _ = s.Shutdown() }()
 	time.Sleep(100 * time.Millisecond)
-	params := g.Map{"ListenedPort": s.GetListenedPort()}
-	view := gviewx.New().SetAdapter(gviewx.NewAdapterFile("testdata"))
 	client := gclientx.New()
+	url := fmt.Sprintf("http://127.0.0.1:%d", s.GetListenedPort())
+	view := gviewx.New().SetAdapter(gviewx.NewAdapterFile("testdata"))
+	params := g.Map{"ListenedPort": s.GetListenedPort()}
+
+	gtest.C(t, func(t *gtest.T) {
+		content, err := client.RawContentRequestContent(ctx, "GET "+url+"/hello HTTP/1.1\n\n")
+		t.Assert(content, "world")
+		t.AssertNil(err)
+		val, err := client.RawContentRequestVar(ctx, "GET "+url+"/hello HTTP/1.1\n\n")
+		t.Assert(val.String(), "world")
+		t.AssertNil(err)
+
+		bytes, err := client.RawContentRequestBytes(ctx, "GET "+url+"/error HTTP/1.1\n\n")
+		t.AssertNil(bytes)
+		httpErr, ok := err.(gclientx.HttpError)
+		t.Assert(ok, true)
+		t.Assert(httpErr.StatusCode(), http.StatusInternalServerError)
+		t.Assert(httpErr.StatusText(), http.StatusText(http.StatusInternalServerError))
+
+		_, err = client.RawContentRequestVar(ctx, "GET "+url+"/illegal HTTP/1.1")
+		t.Assert(err.Error(), "read request failed: unexpected EOF")
+
+		_, err = client.DoRawContentRequest(ctx, "GET /hello HTTP/1.1\n\n")
+		t.Assert(err.Error(), "request failed: Get \"/hello\": unsupported protocol scheme \"\"")
+	})
 
 	gtest.C(t, func(t *gtest.T) {
 		content, err := client.TmplRequestContent(ctx, view, "hello", params)
@@ -165,7 +188,7 @@ func Test_ClientX_Tmpl_Request(t *testing.T) {
 		_, err = client.TmplRequestVar(ctx, view, "illegal", params)
 		t.Assert(err.Error(), "read request failed: unexpected EOF")
 
-		_, err = client.TmplRequestBytes(ctx, view, "fail")
+		_, err = client.DoTmplRequest(ctx, view, "fail")
 		t.Assert(err.Error(), "request failed: Get \"/hello\": unsupported protocol scheme \"\"")
 	})
 }
