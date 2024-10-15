@@ -3,8 +3,8 @@ module github.com/CharLemAznable/gfx/ext/gcfg/apollo
 go 1.20
 
 require (
-	github.com/CharLemAznable/gfx v0.8.5
-	github.com/CharLemAznable/gfx/ext/agollox v0.8.5
+	github.com/CharLemAznable/gfx v0.8.6
+	github.com/CharLemAznable/gfx/ext/agollox v0.8.6
 	github.com/gogf/gf/v2 v2.7.4
 )
 
