@@ -20,7 +20,7 @@ func NewAdapterFile(templatePath ...string) *AdapterFile {
 	if len(templatePath) > 0 && templatePath[0] != "" {
 		tmplPath = templatePath[0]
 	}
-	searchPaths := garray.NewStrArray(true)
+	searchPaths := garray.NewStrArraySize(0, 3, true)
 	addSearchPath(searchPaths, gfile.Pwd(), tmplPath)
 	addSearchPath(searchPaths, gfile.MainPkgPath(), tmplPath)
 	addSearchPath(searchPaths, gfile.SelfDir(), tmplPath)

@@ -34,7 +34,7 @@ func MockServer(appConfig *Config, mockFileName string) (*ghttp.Server, error) {
 	})
 	server.BindHandler("/notifications/v2", func(r *ghttp.Request) {
 		mockDataMap, _ := mockFile.Data(context.Background())
-		notifications := make([]map[string]interface{}, 0)
+		notifications := make([]map[string]interface{}, 0, len(mockDataMap))
 		for namespace := range mockDataMap {
 			notifications = append(notifications, map[string]interface{}{
 				"namespaceName":  namespace,
