@@ -6,7 +6,7 @@ import (
 )
 
 type Client struct {
-	Client *gclient.Client
+	*gclient.Client
 	intlog *glog.Logger
 }
 

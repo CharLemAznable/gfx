@@ -12,12 +12,12 @@ import (
 )
 
 type Config struct {
-	gcfg.Config
+	*gcfg.Config
 	errorFn func(ctx context.Context, format string, v ...interface{})
 }
 
 func New(config *gcfg.Config) *Config {
-	return &Config{Config: *config}
+	return &Config{Config: config}
 }
 
 func (c *Config) SetErrorFn(errorFn func(ctx context.Context, format string, v ...interface{})) *Config {
