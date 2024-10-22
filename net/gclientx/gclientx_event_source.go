@@ -3,7 +3,6 @@ package gclientx
 import (
 	"bufio"
 	"context"
-	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gmutex"
 	"net/http"
@@ -33,8 +32,8 @@ func (c *Client) EventSource(method string, url string, data ...interface{}) Eve
 			return
 		}
 		defer c.deferCloseResponse(ctx, response)
-		if response.StatusCode != http.StatusOK {
-			s.close(gerror.New(string(response.ReadAll())))
+		if statusCode := response.StatusCode; statusCode != http.StatusOK {
+			s.close(NewHttpError(statusCode, string(response.ReadAll())))
 			return
 		}
 		scanner := bufio.NewScanner(response.Body)

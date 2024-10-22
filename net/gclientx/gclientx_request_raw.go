@@ -71,8 +71,8 @@ func (c *Client) RawFnEventSource(rawFn func(context.Context) (string, error)) E
 			return
 		}
 		defer c.deferCloseRawResponse(ctx, response)
-		if response.StatusCode != http.StatusOK {
-			s.close(gerror.New(string(c.readAll(ctx, response))))
+		if statusCode := response.StatusCode; statusCode != http.StatusOK {
+			s.close(NewHttpError(statusCode, string(c.readAll(ctx, response))))
 			return
 		}
 		scanner := bufio.NewScanner(response.Body)

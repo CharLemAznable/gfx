@@ -83,7 +83,12 @@ func Test_EventSource_Error(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.Prefix(prefix).GetEventSource("/notfound")
 		eventSource.Close()
-		t.Assert(eventSource.Err().Error(), "Not Found")
+		httpErr, ok := eventSource.Err().(gclientx.HttpError)
+		t.Assert(ok, true)
+		t.Assert(httpErr.Error(), fmt.Sprintf("%d %s",
+			http.StatusNotFound, http.StatusText(http.StatusNotFound)))
+		t.Assert(httpErr.StatusCode(), http.StatusNotFound)
+		t.Assert(httpErr.StatusText(), http.StatusText(http.StatusNotFound))
 	})
 }
 
@@ -122,7 +127,12 @@ func Test_eventSource_Tmpl_Request(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.RawContentEventSource("GET " + url + "/error HTTP/1.1\n\n")
 		eventSource.Close()
-		t.Assert(eventSource.Err().Error(), "Internal Server Error")
+		httpErr, ok := eventSource.Err().(gclientx.HttpError)
+		t.Assert(ok, true)
+		t.Assert(httpErr.Error(), fmt.Sprintf("%d %s",
+			http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError)))
+		t.Assert(httpErr.StatusCode(), http.StatusInternalServerError)
+		t.Assert(httpErr.StatusText(), http.StatusText(http.StatusInternalServerError))
 	})
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.RawContentEventSource("GET /hello HTTP/1.1\n\n")
@@ -142,7 +152,12 @@ func Test_eventSource_Tmpl_Request(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.TmplEventSource(view, "error", params)
 		eventSource.Close()
-		t.Assert(eventSource.Err().Error(), "Internal Server Error")
+		httpErr, ok := eventSource.Err().(gclientx.HttpError)
+		t.Assert(ok, true)
+		t.Assert(httpErr.Error(), fmt.Sprintf("%d %s",
+			http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError)))
+		t.Assert(httpErr.StatusCode(), http.StatusInternalServerError)
+		t.Assert(httpErr.StatusText(), http.StatusText(http.StatusInternalServerError))
 	})
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.TmplEventSource(view, "fail", params)
