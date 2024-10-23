@@ -6,7 +6,6 @@ import (
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gmutex"
 	"net/http"
 	"strings"
 )
@@ -60,10 +59,7 @@ func (c *Client) RawFnRequestVar(ctx context.Context, rawFn func(context.Context
 }
 
 func (c *Client) RawFnEventSource(rawFn func(context.Context) (string, error)) EventSource {
-	s := &internalEventSource{
-		mutex:  &gmutex.Mutex{},
-		buffer: make(chan *Event, 1024),
-	}
+	s := newEventSource()
 	g.Go(context.Background(), func(ctx context.Context) {
 		response, err := c.DoRawFnRequest(ctx, rawFn)
 		if err != nil {

@@ -77,7 +77,7 @@ func Test_EventSource_Error(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
 		eventSource := client.GetEventSource("")
 		eventSource.Close()
-		t.AssertNE(eventSource.Err(), nil)
+		t.Assert(eventSource.Err().Error(), "request failed: Get \"http:\": http: no Host in request URL")
 	})
 
 	gtest.C(t, func(t *gtest.T) {

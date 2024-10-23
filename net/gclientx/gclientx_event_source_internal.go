@@ -6,6 +6,13 @@ import (
 	"strings"
 )
 
+func newEventSource() *internalEventSource {
+	return &internalEventSource{
+		mutex:  &gmutex.Mutex{},
+		buffer: make(chan *Event, 1024),
+	}
+}
+
 type internalEventSource struct {
 	mutex  *gmutex.Mutex
 	buffer chan *Event

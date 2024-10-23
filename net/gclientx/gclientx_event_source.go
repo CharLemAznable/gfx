@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gmutex"
 	"net/http"
 )
 
@@ -21,10 +20,7 @@ type EventSource interface {
 }
 
 func (c *Client) EventSource(method string, url string, data ...interface{}) EventSource {
-	s := &internalEventSource{
-		mutex:  &gmutex.Mutex{},
-		buffer: make(chan *Event, 1024),
-	}
+	s := newEventSource()
 	g.Go(context.Background(), func(ctx context.Context) {
 		response, err := c.Client.DoRequest(ctx, method, url, data...)
 		if err != nil {
