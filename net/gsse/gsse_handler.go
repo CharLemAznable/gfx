@@ -28,9 +28,8 @@ func Handle(fn func(*Client)) func(*ghttp.Request) {
 			select {
 			case <-keepAliveCtx.Done():
 				return
-			default:
+			case <-time.After(5 * time.Second):
 				client.heartbeat()
-				time.Sleep(5 * time.Second)
 			}
 		}
 	}

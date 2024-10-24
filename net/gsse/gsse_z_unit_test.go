@@ -68,7 +68,7 @@ func Test_SendEvent(t *testing.T) {
 	s.BindHandler("/sse", gsse.Handle(func(client *gsse.Client) {
 		client.KeepAlive()
 		go func(client *gsse.Client) {
-			<-time.After(time.Second)
+			<-time.After(6 * time.Second)
 			client.SendEvent("test", "send event")
 			client.Close()
 			client.SendEvent("test", "send event")
@@ -114,6 +114,6 @@ func Test_SendEventWithId(t *testing.T) {
 		client.SetPrefix(prefix)
 
 		t.Assert(client.GetContent(gctx.New(), "/sse"),
-			":\nid:2\nevent:test\ndata:send event\n\n")
+			"id:2\nevent:test\ndata:send event\n\n")
 	})
 }
