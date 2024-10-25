@@ -1,6 +1,7 @@
 package gclientx_test
 
 import (
+	"context"
 	"fmt"
 	"github.com/CharLemAznable/gfx/net/gclientx"
 	"github.com/CharLemAznable/gfx/net/gsse"
@@ -33,7 +34,7 @@ func Test_EventSource(t *testing.T) {
 	client := gclientx.New(g.Client()).Prefix(prefix)
 
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.GetEventSource("/sse")
+		eventSource := client.GetEventSource(context.Background(), "/sse")
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
@@ -56,7 +57,7 @@ func Test_EventSource(t *testing.T) {
 	})
 
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.GetEventSource("/sse")
+		eventSource := client.GetEventSource(context.Background(), "/sse")
 		eventSource.Close()
 		t.AssertNil(eventSource.Err())
 	})
@@ -65,6 +66,8 @@ func Test_EventSource(t *testing.T) {
 func Test_EventSource_Error(t *testing.T) {
 	s := g.Server(guid.S())
 	s.BindHandler("/sse", gsse.Handle(func(client *gsse.Client) {
+		client.SendEventWithId("1", "message", "send message")
+		<-time.After(3 * time.Second)
 		client.SendEventWithId("1", "message", "send message")
 	}))
 	s.SetDumpRouterMap(false)
@@ -75,13 +78,13 @@ func Test_EventSource_Error(t *testing.T) {
 	client := gclientx.New(g.Client())
 
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.GetEventSource("")
+		eventSource := client.GetEventSource(context.Background(), "")
 		eventSource.Close()
 		t.Assert(eventSource.Err().Error(), "request failed: Get \"http:\": http: no Host in request URL")
 	})
 
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.Prefix(prefix).GetEventSource("/notfound")
+		eventSource := client.Prefix(prefix).GetEventSource(context.Background(), "/notfound")
 		eventSource.Close()
 		httpErr, ok := eventSource.Err().(gclientx.HttpError)
 		t.Assert(ok, true)
@@ -89,6 +92,14 @@ func Test_EventSource_Error(t *testing.T) {
 			http.StatusNotFound, http.StatusText(http.StatusNotFound)))
 		t.Assert(httpErr.StatusCode(), http.StatusNotFound)
 		t.Assert(httpErr.StatusText(), http.StatusText(http.StatusNotFound))
+	})
+
+	gtest.C(t, func(t *gtest.T) {
+		timeout, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		eventSource := client.Prefix(prefix).GetEventSource(timeout, "/sse")
+		eventSource.Close()
+		t.Assert(eventSource.Err().Error(), "context deadline exceeded")
 	})
 }
 
@@ -106,6 +117,11 @@ func Test_eventSource_Tmpl_Request(t *testing.T) {
 	s.BindHandler("/error", gsse.Handle(func(client *gsse.Client) {
 		client.Response().WriteStatusExit(http.StatusInternalServerError)
 	}))
+	s.BindHandler("/timeout", gsse.Handle(func(client *gsse.Client) {
+		client.SendEventWithId("1", "message", "send message")
+		<-time.After(3 * time.Second)
+		client.SendEventWithId("1", "message", "send message")
+	}))
 	s.SetDumpRouterMap(false)
 	_ = s.Start()
 	defer func() { _ = s.Shutdown() }()
@@ -116,7 +132,7 @@ func Test_eventSource_Tmpl_Request(t *testing.T) {
 	params := g.Map{"ListenedPort": s.GetListenedPort()}
 
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.RawContentEventSource("GET " + url + "/hello HTTP/1.1\n\n")
+		eventSource := client.RawContentEventSource(context.Background(), "GET "+url+"/hello HTTP/1.1\n\n")
 		defer eventSource.Close()
 		for event := range eventSource.Event() {
 			t.Assert(event.Event, "message")
@@ -125,7 +141,7 @@ func Test_eventSource_Tmpl_Request(t *testing.T) {
 		}
 	})
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.RawContentEventSource("GET " + url + "/error HTTP/1.1\n\n")
+		eventSource := client.RawContentEventSource(context.Background(), "GET "+url+"/error HTTP/1.1\n\n")
 		eventSource.Close()
 		httpErr, ok := eventSource.Err().(gclientx.HttpError)
 		t.Assert(ok, true)
@@ -135,13 +151,20 @@ func Test_eventSource_Tmpl_Request(t *testing.T) {
 		t.Assert(httpErr.StatusText(), http.StatusText(http.StatusInternalServerError))
 	})
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.RawContentEventSource("GET /hello HTTP/1.1\n\n")
+		eventSource := client.RawContentEventSource(context.Background(), "GET /hello HTTP/1.1\n\n")
 		eventSource.Close()
 		t.Assert(eventSource.Err().Error(), "request failed: Get \"/hello\": unsupported protocol scheme \"\"")
+	})
+	gtest.C(t, func(t *gtest.T) {
+		timeout, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		eventSource := client.RawContentEventSource(timeout, "GET "+url+"/timeout HTTP/1.1\n\n")
+		eventSource.Close()
+		t.Assert(eventSource.Err().Error(), "context deadline exceeded")
 	})
 
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.TmplEventSource(view, "hello", params)
+		eventSource := client.TmplEventSource(context.Background(), view, "hello", params)
 		defer eventSource.Close()
 		for event := range eventSource.Event() {
 			t.Assert(event.Event, "message")
@@ -150,7 +173,7 @@ func Test_eventSource_Tmpl_Request(t *testing.T) {
 		}
 	})
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.TmplEventSource(view, "error", params)
+		eventSource := client.TmplEventSource(context.Background(), view, "error", params)
 		eventSource.Close()
 		httpErr, ok := eventSource.Err().(gclientx.HttpError)
 		t.Assert(ok, true)
@@ -160,8 +183,15 @@ func Test_eventSource_Tmpl_Request(t *testing.T) {
 		t.Assert(httpErr.StatusText(), http.StatusText(http.StatusInternalServerError))
 	})
 	gtest.C(t, func(t *gtest.T) {
-		eventSource := client.TmplEventSource(view, "fail", params)
+		eventSource := client.TmplEventSource(context.Background(), view, "fail", params)
 		eventSource.Close()
 		t.Assert(eventSource.Err().Error(), "request failed: Get \"/hello\": unsupported protocol scheme \"\"")
+	})
+	gtest.C(t, func(t *gtest.T) {
+		timeout, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		eventSource := client.TmplEventSource(timeout, view, "timeout", params)
+		eventSource.Close()
+		t.Assert(eventSource.Err().Error(), "context deadline exceeded")
 	})
 }

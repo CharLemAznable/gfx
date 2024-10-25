@@ -22,8 +22,8 @@ func (c *Client) RawContentRequestVar(ctx context.Context, content string) (*gva
 	return c.RawFnRequestVar(ctx, rawFnWithContent(content))
 }
 
-func (c *Client) RawContentEventSource(content string) EventSource {
-	return c.RawFnEventSource(rawFnWithContent(content))
+func (c *Client) RawContentEventSource(ctx context.Context, content string) EventSource {
+	return c.RawFnEventSource(ctx, rawFnWithContent(content))
 }
 
 func rawFnWithContent(content string) func(context.Context) (string, error) {

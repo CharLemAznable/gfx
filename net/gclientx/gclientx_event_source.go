@@ -19,9 +19,9 @@ type EventSource interface {
 	Close()
 }
 
-func (c *Client) EventSource(method string, url string, data ...interface{}) EventSource {
+func (c *Client) EventSource(ctx context.Context, method string, url string, data ...interface{}) EventSource {
 	s := newEventSource()
-	g.Go(context.Background(), func(ctx context.Context) {
+	g.Go(ctx, func(ctx context.Context) {
 		response, err := c.Client.DoRequest(ctx, method, url, data...)
 		if err != nil {
 			s.close(err)
@@ -33,7 +33,7 @@ func (c *Client) EventSource(method string, url string, data ...interface{}) Eve
 			return
 		}
 		scanner := bufio.NewScanner(response.Body)
-		defer s.close(scanner.Err())
+		defer func() { s.close(scanner.Err()) }()
 		for s.processNextEvent(scanner) {
 		}
 	}, c.deferLogError)

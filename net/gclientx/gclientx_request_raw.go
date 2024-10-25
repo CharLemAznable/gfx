@@ -21,6 +21,10 @@ func (c *Client) DoRawFnRequest(ctx context.Context, rawFn func(context.Context)
 	}
 	// 重置RequestURI，http.ReadRequest会自动设置RequestURI，而客户端请求中不需要这个字段。
 	request.RequestURI = ""
+	// 附加上下文，实现退出通知、元数据传递的功能。
+	if ctx != nil {
+		request = request.WithContext(ctx)
+	}
 	response, err = c.Client.Do(request)
 	if err != nil {
 		err = gerror.Wrapf(err, `request failed`)
@@ -58,9 +62,9 @@ func (c *Client) RawFnRequestVar(ctx context.Context, rawFn func(context.Context
 	return gvar.New(bytes), nil
 }
 
-func (c *Client) RawFnEventSource(rawFn func(context.Context) (string, error)) EventSource {
+func (c *Client) RawFnEventSource(ctx context.Context, rawFn func(context.Context) (string, error)) EventSource {
 	s := newEventSource()
-	g.Go(context.Background(), func(ctx context.Context) {
+	g.Go(ctx, func(ctx context.Context) {
 		response, err := c.DoRawFnRequest(ctx, rawFn)
 		if err != nil {
 			s.close(err)
@@ -72,7 +76,7 @@ func (c *Client) RawFnEventSource(rawFn func(context.Context) (string, error)) E
 			return
 		}
 		scanner := bufio.NewScanner(response.Body)
-		defer s.close(scanner.Err())
+		defer func() { s.close(scanner.Err()) }()
 		for s.processNextEvent(scanner) {
 		}
 	}, c.deferLogError)

@@ -29,9 +29,9 @@ func (c *Client) TmplRequestVar(ctx context.Context, view *gviewx.View,
 	return c.RawFnRequestVar(ctx, rawFnWithTmpl(view, key, params...))
 }
 
-func (c *Client) TmplEventSource(view *gviewx.View,
+func (c *Client) TmplEventSource(ctx context.Context, view *gviewx.View,
 	key string, params ...gview.Params) EventSource {
-	return c.RawFnEventSource(rawFnWithTmpl(view, key, params...))
+	return c.RawFnEventSource(ctx, rawFnWithTmpl(view, key, params...))
 }
 
 func rawFnWithTmpl(view *gviewx.View, key string, params ...gview.Params) func(context.Context) (string, error) {
