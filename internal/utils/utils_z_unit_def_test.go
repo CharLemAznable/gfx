@@ -8,9 +8,9 @@ import (
 
 func Test_DefaultOrNil(t *testing.T) {
 	gtest.C(t, func(t *gtest.T) {
-		t.AssertNil(utils.DefaultOrNil[any]())
-		t.Assert(utils.DefaultOrNil[any]("test").String(), "test")
-		t.Assert(utils.DefaultOrNil[any]("test", "demo").String(), "test")
+		t.AssertNil(utils.DefaultOrNil())
+		t.Assert(utils.DefaultOrNil("test").String(), "test")
+		t.Assert(utils.DefaultOrNil("test", "demo").String(), "test")
 	})
 }
 
