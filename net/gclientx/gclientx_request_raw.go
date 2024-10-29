@@ -21,15 +21,8 @@ func (c *Client) DoRawFnRequest(ctx context.Context, rawFn func(context.Context)
 	if err != nil {
 		return nil, gerror.Wrapf(err, `read request failed`)
 	}
-	reqUrl := request.RequestURI
-	if prefix := c.GetPrefix(); len(prefix) > 0 {
-		reqUrl = prefix + gstr.Trim(reqUrl)
-		if !gstr.ContainsI(reqUrl, `http`) {
-			reqUrl = `http` + `://` + reqUrl
-		}
-		if request.URL, err = url.ParseRequestURI(reqUrl); err != nil {
-			return nil, gerror.Wrapf(err, `prefix request failed`)
-		}
+	if err = c.doPrefix(request); err != nil {
+		return nil, gerror.Wrapf(err, `prefix request failed`)
 	}
 	// 重置RequestURI，http.ReadRequest会自动设置RequestURI，而客户端请求中不需要这个字段。
 	request.RequestURI = ""
@@ -37,29 +30,8 @@ func (c *Client) DoRawFnRequest(ctx context.Context, rawFn func(context.Context)
 	if ctx != nil {
 		request = request.WithContext(ctx)
 	}
-	if headerMap := c.GetHeaderMap(); len(headerMap) > 0 {
-		for k, v := range headerMap {
-			request.Header.Set(k, v)
-		}
-	}
-	if reqHeaderHost := request.Header.Get(`Host`); reqHeaderHost != "" {
-		request.Host = reqHeaderHost
-	}
-	if cookies := c.GetCookieMap(); len(cookies) > 0 {
-		headerCookie := ""
-		for k, v := range cookies {
-			if len(headerCookie) > 0 {
-				headerCookie += ";"
-			}
-			headerCookie += k + "=" + v
-		}
-		if len(headerCookie) > 0 {
-			request.Header.Set(`Cookie`, headerCookie)
-		}
-	}
-	if authUser, authPass := c.GetBasicAuth(); len(authUser) > 0 {
-		request.SetBasicAuth(authUser, authPass)
-	}
+	c.doHeader(request)
+	c.doAuth(request)
 	response, err = c.Client.Do(request)
 	if err != nil {
 		err = gerror.Wrapf(err, `request failed`)
@@ -116,4 +88,47 @@ func (c *Client) RawFnEventSource(ctx context.Context, rawFn func(context.Contex
 		}
 	}, c.deferLogError)
 	return s
+}
+
+func (c *Client) doPrefix(request *http.Request) (err error) {
+	reqUrl := request.RequestURI
+	if prefix := c.GetPrefix(); len(prefix) > 0 {
+		reqUrl = prefix + gstr.Trim(reqUrl)
+		if !gstr.ContainsI(reqUrl, `http`) {
+			reqUrl = `http` + `://` + reqUrl
+		}
+		if request.URL, err = url.ParseRequestURI(reqUrl); err != nil {
+			return err
+		}
+	}
+	return
+}
+
+func (c *Client) doHeader(request *http.Request) {
+	if headerMap := c.GetHeaderMap(); len(headerMap) > 0 {
+		for k, v := range headerMap {
+			request.Header.Set(k, v)
+		}
+	}
+	if reqHeaderHost := request.Header.Get(`Host`); reqHeaderHost != "" {
+		request.Host = reqHeaderHost
+	}
+	if cookies := c.GetCookieMap(); len(cookies) > 0 {
+		headerCookie := ""
+		for k, v := range cookies {
+			if len(headerCookie) > 0 {
+				headerCookie += ";"
+			}
+			headerCookie += k + "=" + v
+		}
+		if len(headerCookie) > 0 {
+			request.Header.Set(`Cookie`, headerCookie)
+		}
+	}
+}
+
+func (c *Client) doAuth(request *http.Request) {
+	if authUser, authPass := c.GetBasicAuth(); len(authUser) > 0 {
+		request.SetBasicAuth(authUser, authPass)
+	}
 }
