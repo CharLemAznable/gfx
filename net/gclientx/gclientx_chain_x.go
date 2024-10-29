@@ -11,7 +11,13 @@ func (c *Client) Prefix(prefix string) *Client {
 	return newClient
 }
 
-func (c *Client) Header(m map[string]string) *Client {
+func (c *Client) Header(key, value string) *Client {
+	newClient := c.Clone()
+	newClient.Client.SetHeader(key, value)
+	return newClient
+}
+
+func (c *Client) HeaderMap(m map[string]string) *Client {
 	newClient := c.Clone()
 	newClient.Client.SetHeaderMap(m)
 	return newClient
@@ -29,7 +35,13 @@ func (c *Client) Discovery(discovery gsvc.Discovery) *Client {
 	return newClient
 }
 
-func (c *Client) Cookie(m map[string]string) *Client {
+func (c *Client) Cookie(key, value string) *Client {
+	newClient := c.Clone()
+	newClient.Client.SetCookie(key, value)
+	return newClient
+}
+
+func (c *Client) CookieMap(m map[string]string) *Client {
 	newClient := c.Clone()
 	newClient.Client.SetCookieMap(m)
 	return newClient

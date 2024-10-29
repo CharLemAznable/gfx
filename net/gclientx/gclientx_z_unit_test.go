@@ -129,6 +129,28 @@ func Test_ClientX_SetIntLog(t *testing.T) {
 	})
 }
 
+func Test_ClientX_Private(t *testing.T) {
+	gtest.C(t, func(t *gtest.T) {
+		client := gclientx.New().
+			Prefix("http://a.b.c").
+			HeaderMap(map[string]string{"hKey": "hValue"}).
+			CookieMap(map[string]string{"cKey": "cValue"}).
+			BasicAuth("user", "pass")
+		t.Assert(client.GetPrefix(), "http://a.b.c")
+		t.Assert(client.GetHeader("hKey"), "hValue")
+		t.Assert(client.GetCookie("cKey"), "cValue")
+		user, pass := client.GetBasicAuth()
+		t.Assert(user, "user")
+		t.Assert(pass, "pass")
+
+		// get map read-only copy
+		client.GetHeaderMap()["hKey"] = "hValue2"
+		client.GetCookieMap()["cKey"] = "cValue2"
+		t.Assert(client.GetHeader("hKey"), "hValue")
+		t.Assert(client.GetCookie("cKey"), "cValue")
+	})
+}
+
 func Test_ClientX_Tmpl_Request(t *testing.T) {
 	s := g.Server(guid.S())
 	s.BindHandler("/hello", func(r *ghttp.Request) {
