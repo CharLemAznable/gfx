@@ -1,0 +1,2 @@
+GET /auth HTTP/1.1
+

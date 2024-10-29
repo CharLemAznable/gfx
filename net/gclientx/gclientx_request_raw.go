@@ -6,7 +6,9 @@ import (
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/text/gstr"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -19,11 +21,44 @@ func (c *Client) DoRawFnRequest(ctx context.Context, rawFn func(context.Context)
 	if err != nil {
 		return nil, gerror.Wrapf(err, `read request failed`)
 	}
+	reqUrl := request.RequestURI
+	if prefix := c.GetPrefix(); len(prefix) > 0 {
+		reqUrl = prefix + gstr.Trim(reqUrl)
+		if !gstr.ContainsI(reqUrl, `http`) {
+			reqUrl = `http` + `://` + reqUrl
+		}
+		if request.URL, err = url.ParseRequestURI(reqUrl); err != nil {
+			return nil, gerror.Wrapf(err, `prefix request failed`)
+		}
+	}
 	// 重置RequestURI，http.ReadRequest会自动设置RequestURI，而客户端请求中不需要这个字段。
 	request.RequestURI = ""
 	// 附加上下文，实现退出通知、元数据传递的功能。
 	if ctx != nil {
 		request = request.WithContext(ctx)
+	}
+	if headerMap := c.GetHeaderMap(); len(headerMap) > 0 {
+		for k, v := range headerMap {
+			request.Header.Set(k, v)
+		}
+	}
+	if reqHeaderHost := request.Header.Get(`Host`); reqHeaderHost != "" {
+		request.Host = reqHeaderHost
+	}
+	if cookies := c.GetCookieMap(); len(cookies) > 0 {
+		headerCookie := ""
+		for k, v := range cookies {
+			if len(headerCookie) > 0 {
+				headerCookie += ";"
+			}
+			headerCookie += k + "=" + v
+		}
+		if len(headerCookie) > 0 {
+			request.Header.Set(`Cookie`, headerCookie)
+		}
+	}
+	if authUser, authPass := c.GetBasicAuth(); len(authUser) > 0 {
+		request.SetBasicAuth(authUser, authPass)
 	}
 	response, err = c.Client.Do(request)
 	if err != nil {

@@ -1,6 +1,7 @@
 package gclientx
 
 import (
+	"github.com/gogf/gf/v2/net/gclient"
 	"net/http"
 	"unsafe"
 )
@@ -39,7 +40,11 @@ var (
 )
 
 func (c *Client) offsetPointer(offset uintptr) unsafe.Pointer {
-	return unsafe.Pointer(uintptr(unsafe.Pointer(c.Client)) + baseOffset + offset)
+	return offsetPointer(c.Client, offset)
+}
+
+func offsetPointer(client *gclient.Client, offset uintptr) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(unsafe.Pointer(client)) + baseOffset + offset)
 }
 
 func mapCopy(data map[string]string) (copy map[string]string) {

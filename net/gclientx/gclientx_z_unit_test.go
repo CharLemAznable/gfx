@@ -155,9 +155,24 @@ func Test_ClientX_Tmpl_Request(t *testing.T) {
 	s := g.Server(guid.S())
 	s.BindHandler("/hello", func(r *ghttp.Request) {
 		r.Response.Write("world")
+		if hv := r.GetHeader("hKey"); hv != "" {
+			r.Response.Writeln()
+			r.Response.Write(hv)
+		}
+		if cv := r.Cookie.Get("cKey").String(); cv != "" {
+			r.Response.Writeln()
+			r.Response.Write(cv)
+		}
 	})
 	s.BindHandler("/error", func(r *ghttp.Request) {
 		r.Response.WriteStatusExit(http.StatusInternalServerError)
+	})
+	s.BindHandler("/auth", func(r *ghttp.Request) {
+		if r.BasicAuth("john", "123456") {
+			r.Response.Write("ok")
+		} else {
+			r.Response.Write("fail")
+		}
 	})
 	s.SetDumpRouterMap(false)
 	_ = s.Start()
@@ -188,6 +203,23 @@ func Test_ClientX_Tmpl_Request(t *testing.T) {
 
 		_, err = client.DoRawContentRequest(ctx, "GET /hello HTTP/1.1\n\n")
 		t.Assert(err.Error(), "request failed: Get \"/hello\": unsupported protocol scheme \"\"")
+
+		content, err = client.Prefix(url).
+			Header("hKey", "hValue").
+			Header("Host", "127.0.0.1").
+			Cookie("cKey", "cValue").
+			Cookie("cKey1", "cValue1").
+			RawContentRequestContent(ctx, "GET /hello HTTP/1.1\n\n")
+		t.Assert(content, "world\nhValue\ncValue")
+		t.AssertNil(err)
+
+		_, err = client.Prefix(" ").DoRawContentRequest(ctx, "GET /hello HTTP/1.1\n\n")
+		t.Assert(err.Error(), "prefix request failed: parse \"http:// /hello\": invalid character \" \" in host name")
+
+		content, err = client.Prefix(url).BasicAuth("john", "123456").
+			RawContentRequestContent(ctx, "GET /auth HTTP/1.1\n\n")
+		t.Assert(content, "ok")
+		t.AssertNil(err)
 	})
 
 	gtest.C(t, func(t *gtest.T) {
@@ -212,5 +244,22 @@ func Test_ClientX_Tmpl_Request(t *testing.T) {
 
 		_, err = client.DoTmplRequest(ctx, view, "fail")
 		t.Assert(err.Error(), "request failed: Get \"/hello\": unsupported protocol scheme \"\"")
+
+		content, err = client.Prefix(url).
+			Header("hKey", "hValue").
+			Header("Host", "127.0.0.1").
+			Cookie("cKey", "cValue").
+			Cookie("cKey1", "cValue1").
+			TmplRequestContent(ctx, view, "fail")
+		t.Assert(content, "world\nhValue\ncValue")
+		t.AssertNil(err)
+
+		_, err = client.Prefix(" ").DoTmplRequest(ctx, view, "fail")
+		t.Assert(err.Error(), "prefix request failed: parse \"http:// /hello\": invalid character \" \" in host name")
+
+		content, err = client.Prefix(url).BasicAuth("john", "123456").
+			TmplRequestContent(ctx, view, "auth")
+		t.Assert(content, "ok")
+		t.AssertNil(err)
 	})
 }
