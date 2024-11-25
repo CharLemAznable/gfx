@@ -23,13 +23,5 @@ func (c *Client) SetIntLog(intlog *glog.Logger) *Client {
 }
 
 func (c *Client) Clone() *Client {
-	newClient := gclient.New()
-	*newClient = *c.Client
-	// alloc header map anyway
-	newHeader := (*map[string]string)(offsetPointer(newClient, headerOffset))
-	*newHeader = c.GetHeaderMap()
-	// alloc cookies map anyway
-	newCookies := (*map[string]string)(offsetPointer(newClient, cookiesOffset))
-	*newCookies = c.GetCookieMap()
-	return New(newClient).SetIntLog(c.intlog)
+	return New(c.Client.Clone()).SetIntLog(c.intlog)
 }

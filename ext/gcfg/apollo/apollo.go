@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gcfg"
 	"github.com/gogf/gf/v2/os/gmutex"
+	"github.com/gogf/gf/v2/util/gconv"
 )
 
 func LoadAdapter(ctx context.Context) (gcfg.Adapter, error) {
@@ -74,10 +75,12 @@ func (a *AdapterApollo) updateLocalValue(onlyIfValueIsNil bool) (err error) {
 			return
 		}
 		var (
-			value = a.client.Get(a.config.Key)
+			value = gconv.Bytes(a.client.Get(a.config.Key))
 			json  = gjson.New(nil)
 		)
-		json, err = gjson.LoadContent(value, true)
+		if len(value) > 0 {
+			json, err = gjson.LoadContent(value, true)
+		}
 		a.value.Set(json)
 	})
 	return
