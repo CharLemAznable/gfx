@@ -144,7 +144,7 @@ func newClient(request *ghttp.Request) *Client {
 	go func() {
 		<-client.Context().Done()
 		if onClose := client.onClose.Val(); onClose != nil {
-			gx.GoIgnoreX(func() {
+			gx.GoAnywayX(func() {
 				onClose.(func(*Client))(client)
 			})
 		}
